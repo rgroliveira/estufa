@@ -1,0 +1,191 @@
+#include <stdio.h>
+#include "RMemoria_NVS.h"
+
+
+#include <string.h>
+#include <inttypes.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "nvs_flash.h" // Biblioteca NVS para armazenamento de dados
+#include "nvs.h"
+#include "esp_log.h"
+
+const char *TAG_NVS = "Memoria NVS";                                                 //define the tag for the log
+    
+//int16_t     GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
+
+char ssid[32];                                                               //variable to store the ssid
+char GSenha[32];                                                          //variable to store the password
+
+void func(void)
+{
+
+}
+
+//===============================================================
+void ESTUFA_NVS_Inicializar(void)
+{ // Initializa a memória NVS
+  esp_err_t Erro;
+  
+    Erro = nvs_flash_init();                                              // inicializa a partição padrão da NVS
+    ESP_LOGI(TAG_NVS, "Inicializando a NVS");                                       // Registra a ação
+    if (Erro == ESP_ERR_NVS_NO_FREE_PAGES || Erro == ESP_ERR_NVS_NEW_VERSION_FOUND) // se a partição estiver truncada, apague-a e tente novamente
+    {    // A partição NVS foi truncada e precisa ser apagada
+        ESP_ERROR_CHECK(nvs_flash_erase());                                         // apaga a partição
+        Erro = nvs_flash_init();                                                    // inicializa a partição padrão da NVS
+    }
+    ESP_ERROR_CHECK(Erro);                                                        // verifica se a inicialização foi bem-sucedida
+}
+
+//===============================================================
+void ESTUFA_NVS_Setpoint_Le( int8_t *SetPoint_Memoria)
+{  // Função para ler o setpoint na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    //read setpoint from NVS
+    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+    } 
+    else 
+    {
+        ESP_LOGI(TAG_NVS, "Reading setpoint from NVS ... ");                                    //log the action
+        Erro = nvs_get_i8(nvs_handle, "setpoint", SetPoint_Memoria);                                //read the setpoint from the nvs
+        switch (Erro)                                                                        //check the return of the function
+        {
+            case ESP_OK:                                                                    //if the function returns ESP_OK
+                ESP_LOGI(TAG_NVS, "Done");                                                    //log the action
+                ESP_LOGI(TAG_NVS, "Setpoint = %" PRIu8, *SetPoint_Memoria);                              //log the value read
+                break;
+            case ESP_ERR_NVS_NOT_FOUND:                                                     //if the value was not found
+                ESP_LOGI(TAG_NVS, "The value is not initialized yet!");                        //log the action
+                ESP_LOGI(TAG_NVS, "Initializing setpoint to %d", CONFIG_ESTUFA_SETPOINT_DEFAULT);            //log the action
+                *SetPoint_Memoria = CONFIG_ESTUFA_SETPOINT_DEFAULT;                                                //initialize the setpoint
+                //Write setpoint to NVS
+                ESP_LOGI(TAG_NVS, "Writing setpoint to NVS ... ");                              //log the action
+                Erro = nvs_set_i8(nvs_handle, "setpoint", *SetPoint_Memoria);                         //write the setpoint to the nvs
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                    //log the action
+                Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+                break;
+            default :
+                ESP_LOGI(TAG_NVS, "Error (%s) reading!", esp_err_to_name(Erro));               //log the error
+        }
+        nvs_close(nvs_handle);                                                              //close the nvs handle    
+    }
+
+}   
+
+//===============================================================
+void ESTUFA_NVS_Setpoint_Grava( int8_t SetPoint_Memoria)
+{ // Função para gravar o setpoint na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    //write setpoint to NVS
+    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+    } 
+    else 
+    {
+        ESP_LOGI(TAG_NVS, "Writing setpoint to NVS ... ");                                    //log the action
+        Erro = nvs_set_i8(nvs_handle, "setpoint", SetPoint_Memoria);                                //write the setpoint to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                            //log the action
+        Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+        nvs_close(nvs_handle);                                                              //close the nvs handle    
+    }
+}
+
+//===============================================================
+void NVS_Le_SSID( void)
+{  // Função para ler o SSID na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    //read ssid from NVS using string
+    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
+    if (Erro != ESP_OK)                                                                          //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!", esp_err_to_name(Erro));                //log the error
+    } 
+    else 
+    {
+
+        ESP_LOGI(TAG_NVS, "Reading SSID from NVS ... ");                                            //log the action
+        size_t required_size = sizeof(ssid);                                                    //get the size of the ssid string
+        Erro = nvs_get_str(nvs_handle, "ssid", ssid, &required_size);                            //read the ssid from the nvs
+        switch (Erro)                                                                            //check the return of the function
+        {
+            case ESP_OK:                                                                        //if the function returns ESP_OK
+                ESP_LOGI(TAG_NVS, "Done");                                                          //log the action
+                ESP_LOGI(TAG_NVS, "SSID = %s", ssid);                                               //log the value read
+                break;
+            case ESP_ERR_NVS_NOT_FOUND:                                                         //if the value was not found
+                ESP_LOGI(TAG_NVS, "The value is not initialized yet!");                             //log the action
+                ESP_LOGI(TAG_NVS, "Initializing SSID");                                             //log the action
+                strcpy(ssid, "MySSID");
+                //Write SSID to NVS
+                ESP_LOGI(TAG_NVS, "Writing SSID to NVS ... ");                                      //log the action
+                Erro = nvs_set_str(nvs_handle, "ssid", ssid);                                    //write the ssid to the nvs
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                        //log the action   
+                Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action                         
+                break;
+            default :
+                ESP_LOGI(TAG_NVS, "Error (%s) reading!", esp_err_to_name(Erro));                     //log the error
+        }
+        nvs_close(nvs_handle);
+    }
+}
+
+//===============================================================
+void    NVS_Le_Senha()
+{ // Função para ler a senha na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+    //Le uma"senha da NVS usando string
+    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
+    if (Erro != ESP_OK)                                                                          //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!", esp_err_to_name(Erro));                //log the error
+    } 
+    else 
+    {
+
+        ESP_LOGI(TAG_NVS, "Lendo GSenha da NVS ... ");                                            //Registra a ação
+        size_t required_size = sizeof(GSenha);                                                //Pega o tamanho da string GSenha
+        Erro = nvs_get_str(nvs_handle, "GSenha", GSenha, &required_size);                      //Lê a senha da NVS
+        switch (Erro)                                                                          //Checa o retorno da função
+        {
+            case ESP_OK:                                                                        //Se a função retorna ESP_OK
+                ESP_LOGI(TAG_NVS, "Done");                                                          //log para ação
+                ESP_LOGI(TAG_NVS, "GSenha = %s", GSenha);                                           // Log para o valor lido
+                break;
+            case ESP_ERR_NVS_NOT_FOUND:                                                         //Se o valor não foi encontrado
+                ESP_LOGI(TAG_NVS, "Este valor ainda não está inicializado!");                       //Log para ação
+                ESP_LOGI(TAG_NVS, "Inicializando GSenha");                                          //Log para ação
+                strcpy(GSenha, "0123456789");
+                //Escreve GSenha na NVS
+                ESP_LOGI(TAG_NVS, "Escrevendo GSenha na NVS ... ");                                 //Log para ação
+                Erro = nvs_set_str(nvs_handle, "GSenha", GSenha);                                    //escreve a senha na NVS
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Falhou!" : "Feito");                      //Log para ação
+                Erro = nvs_commit(nvs_handle);                                           //commit para as mudanças na NVS
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Falhou!" : "Feito");                      //Log para ação
+                break;
+            default :
+                ESP_LOGI(TAG_NVS, "Erro (%s) ao ler!", esp_err_to_name(Erro));                       //Log para ação
+        }
+        nvs_close(nvs_handle);
+    }
+
+};

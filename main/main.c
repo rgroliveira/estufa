@@ -57,6 +57,8 @@ Projeto Final: Rogerio
 
 #include "dht.h"      // Biblioteca DHT para DHT11
 #include "ssd1306.h"  // Biblioteca SSD1306 para OLED
+#include "RMemoria_NVS.h" // Ajuste o caminho conforme a localização real do arquivo
+
  
 
 //Pinos
@@ -103,7 +105,7 @@ struct Tipo_Registro{
    
 }  GRegistro1;
 
-int16_t     GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
+int8_t      GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
 int16_t     GTemperatura_Max        = CONFIG_ESTUFA_MAX_TEMP;      // definido no menuconfig
 int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;      // definido no menuconfig
 uint8_t     GRele_Ativo = 0;            // Rele Ativo ou Inativo
@@ -244,11 +246,13 @@ void buttonTask(void *pvpameters)
         Tempo_Botao_Pressionado = Tempo_Atual;                  // Atualiza o tempo do último pressionamento do botão
         if (Numero_Pino == PINO_BOTAO_INCREMENTA)               // Checa se o botão 1 foi pressionado
             { GSetPoint_Temperatura++;                          // Aumenta o set point de temperatura
-                Termostato_Processa(6,7);
+              Termostato_Processa(6,7);
+              ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
             };
         if (Numero_Pino == PINO_BOTAO_DECREMENTA)               // Checa se o botão 2 foi pressionado
             { GSetPoint_Temperatura--;                          // Decrementa o set point de temperatura
-                Termostato_Processa(6,7);
+              Termostato_Processa(6,7);
+              ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
             };
     }
   }
@@ -326,9 +330,11 @@ void app_main(void)
 {
     uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
    
+    ESTUFA_NVS_Inicializar();
     Display_OLED_Inicia( 1 );
     LDR_ADC_Inicia();
     Inicia_os_GPIO();  // Inicia as entradas e saídas do GPIO
+    ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura ); // Le o setpoint da NVS
 
     ssd1306_display_text(&GDisplay_OLED,0, TAG_VERSAO     , strlen ( TAG_VERSAO ), false); 
     ssd1306_display_text(&GDisplay_OLED,1,"Rogerio IFCE" , 12, false); 
