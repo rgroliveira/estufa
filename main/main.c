@@ -1,5 +1,5 @@
 // Estufa
-static const char *TAG_VERSAO = "Estufa 1.02b";
+static const char *TAG_VERSAO = "Estufa r1.01";
 
 /*
 Projeto Final: Rogerio
