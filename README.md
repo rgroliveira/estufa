@@ -1,3 +1,6 @@
+# Estufa Ditatica 1.0
+Rogerio ifce.edu.br
+
 # _Sample project_
 
 (See the README.md file in the upper level 'examples' directory for more information about examples.)
@@ -31,3 +34,20 @@ Below is short explanation of remaining files in the project folder.
 Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
 They are not used or needed when building with CMake and idf.py.
 "# estufa" 
+
+## Brainstorm Menu
+├─ 1 Principal
+├─ 2 Setpoint
+├─ 2.1 Setpoint
+├─ 3 Modo
+├─ 3.1 Automatico
+├─ 3.2 Ligado
+├─ 3.3 Desligado
+├─ 4 Ajusta Hora
+├─ 4.1 Hora
+├─ 4.2 Minuto
+├─ 4.3 Segundo
+├─ 5 Ajusta data
+├─ 5.1 Dia
+├─ 5.2 Mes
+├─ 5.3 Ano
