@@ -1,6 +1,37 @@
 # Estufa Ditatica 1.0
 Rogerio ifce.edu.br
 
+Projeto Final: Rogerio
+## 1	Descrição do Projeto
+   O projeto consiste em criar um sistema embarcado para monitorar e controlar os parâmetros 
+   de uma estufa. O sistema utiliza sensores para medir temperatura, umidade e luminosidade, 
+   exibindo os valores em um display OLED. O usuário poderá ajustar o set point de temperatura 
+   por meio de um menu interativo no display. Além disso, será possível registrar os dados 
+   monitorados em um arquivo na memória do ESP32 e acessá-los posteriormente via comunicação 
+   serial.
+
+## 2 Requisitos do Projeto
+2.1 Monitoramento:
+    DHT11: Monitorar temperatura e umidade.
+    LDR: Monitorar a luminosidade da estufa.
+
+2.2 Controle e Exibição:
+    Display OLED: Exibir os valores de temperatura, umidade e luminosidade em tempo real.
+    Implementar um menu interativo para o ajuste do set point de temperatura e outras configurações.
+
+2.3 Configuração e Operação:
+   O usuário poderá ligar/desligar o sistema de controle manualmente.
+   Configurar o menuconfig para permitir ajustes de pré-compilação, como pinos dos sensores e 
+   parâmetros padrões, etc
+
+2.4 Registro de Dados:
+   Implementar o SPIFFS ou LittleFS para salvar os valores monitorados em um arquivo log.txt.
+   O usuário poderá habilitar/desabilitar o registro de dados via menu interativo.
+   Implementar um comando serial para leitura do arquivo de log, exibindo os dados salvos no terminal.
+
+3 Estrutura do Projeto:
+  O projeto deve ser organizado em bibliotecas (componentes) para modularidade e reutilização de código.
+
 ## Brainstorm Menu
 ```
 ├─ 1 Principal
