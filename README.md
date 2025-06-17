@@ -1,21 +1,6 @@
 # Estufa Ditatica 1.0
 Rogerio ifce.edu.br
 
-
-```
-├─ 1 Principal
-├─ 2 Setpoint
-├─ 2.1 Setpoint
-├─ 3 Modo
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── main.c
-└── README.md                  This is the file you are currently reading
-```
-
-
-
 ## Brainstorm Menu
 ```
 ├─ 1 Principal
