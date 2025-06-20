@@ -40,6 +40,17 @@ Projeto Final: Rogerio
 //    OLED SSD1306: https://github.com/nopnop2002/esp-idf-ssd1306
 //=============================================================================
 
+// Configuração do ESP-IDF
+// Atencao: No menuconfig, configure a "Partition Table" para "Custom partition table CSV" 
+// e informe o arquivo "partition.csv"
+// Arquivo "Partition CSV"
+//        # ESP-IDF Partition Table
+//        # Name, Type, SubType, Offset, Size, Flags
+//        nvs,        data, nvs,      0x9000,  0x6000,
+//        phy_init,   data, phy,      0xf000,  0x1000,
+//        factory,    app,  factory,  0x10000, 1M,
+//        littlefs,data,spiffs,,256K,,
+
 
 // No Franzininho  com LAB01, para Display OLED SSD1306: SCL 9, SDA 8 e RESET GPIO -1
 // Codigo do display
@@ -57,8 +68,7 @@ Projeto Final: Rogerio
 
 #include "dht.h"      // Biblioteca DHT para DHT11
 #include "ssd1306.h"  // Biblioteca SSD1306 para OLED
-#include "RMemoria_NVS.h" // Ajuste o caminho conforme a localização real do arquivo
-
+#include "RMemoria_NVS.h" 
  
 
 //Pinos
@@ -111,6 +121,35 @@ int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;      // definido n
 uint8_t     GRele_Ativo = 0;            // Rele Ativo ou Inativo
 char        GAuxs[40];                  //String auxiliar para formatar os dados (aumentado para evitar overflow)
 SSD1306_t   GDisplay_OLED;              //Device do OLED SSD1306
+
+
+// Menus
+#define MAX_MENU_TELAS 4
+#define MAX_MENUS_LINHAS 3
+
+enum Tipo_Menu_Telas {
+    MENU_TELA_PRINCIPAL = 0, // Tela principal do menu
+    MENU_TELA_SETPOINT,      // Tela de setpoint
+    MENU_TELA_CONTROLE,      // Tela de controle
+    MENU_TELA_ARQUIVO        // Tela de arquivo
+} GMenu_Tela_Atual;          // Variável global para armazenar a tela atual do menu
+
+enum Tipo_Modo_Controle {
+    MODO_AUTOMATICO = 0, // Controle automático
+    MODO_MANUAL_LIGADO,
+    MODO_MANUAL_DESLIGADO
+} GModo_Controle; // Variável global para armazenar o modo de controle
+
+int8_t GMenu_Coluna_Atual = 0; // Coluna atual do menu
+
+int8_t GMatriz_Menu [MAX_MENUS_LINHAS][MAX_MENU_TELAS] = {
+    { 1, 2, 3, 4 }, // Linha 0 - Opções do menu
+    { 0, 1, 1, 1 }, // Linha 1 - Opções do menu
+    { 0, 0, 2, 0 }  // Linha 2 - Opções do menu
+};
+
+// Funcoes
+void Tela_OLED_Escreve( );
 
 //=============================================================================
 void Display_OLED_Inicia( int TEspera)
@@ -193,29 +232,19 @@ uint8_t DHT11_Leitura(void)
 
 
 //=============================================================================
-void Termostato_Processa( uint8_t Linha1_Display, uint8_t Linha2_Display )
+void Termostato_Processa( void )
 // Processa o rele de acordo com a temperatura lida, e escreve no display OLED
 { 
-    if( Linha1_Display > 0)
-    {
-        sprintf(GAuxs, "Set Point = %2d'C", GSetPoint_Temperatura);          //formata linha do setpoint
-        ssd1306_display_text(&GDisplay_OLED, Linha1_Display, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
-    }
     if (GRegistro1.Temperatura > GSetPoint_Temperatura)  // Se a temperatura for maior que o set point
     { 
         gpio_set_level(PINO_RELE, 0);  // Desliga o relé
         GRele_Ativo = 0;               // Rele Inativo
-        if ( Linha2_Display > 0)
-           ssd1306_display_text(&GDisplay_OLED, Linha2_Display, "Rele: Desligado", 16, false); // Exibe no OLED
     }
     else
     {
         gpio_set_level(PINO_RELE, 1);  // Liga o relé
         GRele_Ativo = 1;               // Rele Ativo
-        if ( Linha2_Display > 0)
-           ssd1306_display_text(&GDisplay_OLED, Linha2_Display, "Rele: Ligado"   , 16, true); // Exibe no OLED
     }
-
 }
 
 //=============================================================================
@@ -244,16 +273,36 @@ void buttonTask(void *pvpameters)
     if (Tempo_Atual - Tempo_Botao_Pressionado >= pdMS_TO_TICKS(250)) // Verifica se o tempo desde o último pressionamento é maior que 250ms
     {
         Tempo_Botao_Pressionado = Tempo_Atual;                  // Atualiza o tempo do último pressionamento do botão
-        if (Numero_Pino == PINO_BOTAO_INCREMENTA)               // Checa se o botão 1 foi pressionado
+
+        if ((Numero_Pino == PINO_BOTAO_INCREMENTA) && (GMenu_Tela_Atual == MENU_TELA_SETPOINT))               // Checa se o botão 1 foi pressionado
             { GSetPoint_Temperatura++;                          // Aumenta o set point de temperatura
-              Termostato_Processa(6,7);
+              Termostato_Processa();
               ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
+              Tela_OLED_Escreve();
             };
-        if (Numero_Pino == PINO_BOTAO_DECREMENTA)               // Checa se o botão 2 foi pressionado
+        if ( (Numero_Pino == PINO_BOTAO_DECREMENTA) && (GMenu_Tela_Atual == MENU_TELA_SETPOINT))               // Checa se o botão 2 foi pressionado
             { GSetPoint_Temperatura--;                          // Decrementa o set point de temperatura
-              Termostato_Processa(6,7);
+              Termostato_Processa();
               ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
+              Tela_OLED_Escreve();
             };
+
+
+        if( Numero_Pino == PINO_BOTAO_DIREITA)
+        {  GMenu_Tela_Atual++; // Incrementa a tela do menu
+           if (GMenu_Tela_Atual >= MAX_MENU_TELAS) 
+                  GMenu_Tela_Atual = 0; // Reseta para a primeira tela se ultrapassar o limite
+           ssd1306_clear_screen(&GDisplay_OLED,false);                  //Apaga a tela OLED
+           Tela_OLED_Escreve(); // Escreve a tela atual no OLED
+        }  
+        if( Numero_Pino == PINO_BOTAO_ESQUERDA)
+        {  GMenu_Tela_Atual--; // Decrementa a tela do menu
+           if (GMenu_Tela_Atual < 0) 
+                  GMenu_Tela_Atual = MAX_MENU_TELAS - 1; // Reseta para a última tela se ultrapassar o limite
+           ssd1306_clear_screen(&GDisplay_OLED,false);                  //Apaga a tela OLED
+           Tela_OLED_Escreve(); // Escreve a tela atual no OLED
+        }  
+    
     }
   }
 }
@@ -287,12 +336,44 @@ void Inicia_os_GPIO(void)
     gpio_pulldown_dis(PINO_BOTAO_DECREMENTA);                       //disable pull-down
     gpio_set_intr_type(PINO_BOTAO_DECREMENTA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
 
+     //Incicializa botão BOTAO_BAIXO
+    gpio_reset_pin(PINO_BOTAO_BAIXO);                          //select BUTTON_PIN2 as GPIO
+    gpio_set_direction(PINO_BOTAO_BAIXO, GPIO_MODE_INPUT);     //set as input
+    gpio_pullup_en(PINO_BOTAO_BAIXO);                          //enable pull-up
+    gpio_pulldown_dis(PINO_BOTAO_BAIXO);                       //disable pull-down
+    gpio_set_intr_type(PINO_BOTAO_BAIXO, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+
+    //Incicializa botão PINO_BOTAO_DIREITA
+    gpio_reset_pin(PINO_BOTAO_DIREITA);                          //select BUTTON_PIN2 as GPIO
+    gpio_set_direction(PINO_BOTAO_DIREITA, GPIO_MODE_INPUT);     //set as input
+    gpio_pullup_en(PINO_BOTAO_DIREITA);                          //enable pull-up
+    gpio_pulldown_dis(PINO_BOTAO_DIREITA);                       //disable pull-down
+    gpio_set_intr_type(PINO_BOTAO_DIREITA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+
+    //Incicializa botão PINO_BOTAO_ESQUERDA
+    gpio_reset_pin(PINO_BOTAO_ESQUERDA);                          //select BUTTON_PIN2 as GPIO
+    gpio_set_direction(PINO_BOTAO_ESQUERDA, GPIO_MODE_INPUT);     //set as input
+    gpio_pullup_en(PINO_BOTAO_ESQUERDA);                          //enable pull-up
+    gpio_pulldown_dis(PINO_BOTAO_ESQUERDA);                       //disable pull-down
+    gpio_set_intr_type(PINO_BOTAO_ESQUERDA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+
+    //Incicializa botão PINO_BOTAO_CIMA
+    gpio_reset_pin(PINO_BOTAO_CIMA);                          //select BUTTON_PIN2 as GPIO
+    gpio_set_direction(PINO_BOTAO_CIMA, GPIO_MODE_INPUT);     //set as input
+    gpio_pullup_en(PINO_BOTAO_CIMA);                          //enable pull-up
+    gpio_pulldown_dis(PINO_BOTAO_CIMA);                       //disable pull-down
+    gpio_set_intr_type(PINO_BOTAO_CIMA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+
     gpio_evt_queue  = xQueueCreate(1, sizeof(uint32_t));            //create queue to handle gpio event from ISR
     xTaskCreate(buttonTask, "buttonTask", 2048, NULL, 2, NULL);     //create button task
 
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);                  //install interrupt service routine
     gpio_isr_handler_add(PINO_BOTAO_INCREMENTA, gpio_isr_handler, (void*)PINO_BOTAO_INCREMENTA); //add ISR handler for button1
     gpio_isr_handler_add(PINO_BOTAO_DECREMENTA, gpio_isr_handler, (void*)PINO_BOTAO_DECREMENTA); //add ISR handler for button2
+    gpio_isr_handler_add(PINO_BOTAO_BAIXO, gpio_isr_handler,    (void*)PINO_BOTAO_BAIXO); 
+    gpio_isr_handler_add(PINO_BOTAO_DIREITA, gpio_isr_handler,  (void*)PINO_BOTAO_DIREITA); 
+    gpio_isr_handler_add(PINO_BOTAO_ESQUERDA, gpio_isr_handler, (void*)PINO_BOTAO_ESQUERDA); 
+    gpio_isr_handler_add(PINO_BOTAO_CIMA, gpio_isr_handler,     (void*)PINO_BOTAO_CIMA); 
 
 }
 
@@ -316,10 +397,59 @@ void RTC_DS3231_Leitura(void)
 void RTC_DS3231_Mostra_Hora(  uint8_t Linha_Display)
 { // Mostra a hora no display OLED
 
-    sprintf(GAuxs, "%02d/%02d/%04d %02d:%02d:%02d", 
-            GRegistro1.Dia, GRegistro1.Mes, GRegistro1.Ano, 
-            GRegistro1.Hora, GRegistro1.Minuto, GRegistro1.Segundo); 
-    ssd1306_display_text(&GDisplay_OLED,Linha_Display,GAuxs,strlen(GAuxs),false);      //display the date and time   
+
+}
+
+//=============================================================================
+void Tela_OLED_Escreve( )
+{ // Escreve a tela atual no OLED
+    // Esta função deve ser implementada para escrever a tela atual no OLED
+
+    switch (GMenu_Tela_Atual) 
+    {
+        case MENU_TELA_PRINCIPAL: // Menu principal
+                ssd1306_display_text(&GDisplay_OLED, 0, TAG_VERSAO     , strlen ( TAG_VERSAO ), false); 
+                ssd1306_display_text(&GDisplay_OLED, 1,"Rogerio IFCE" , 12, false); 
+
+                sprintf(GAuxs, "Temperat. = %2d'C", GRegistro1.Temperatura);                       //format the temperature data   
+                ssd1306_display_text(&GDisplay_OLED, 2,GAuxs,strlen(GAuxs),false);      //display the temperature data
+                sprintf(GAuxs, "Umidade   = %2d %%", GRegistro1.Umidade);                        //format the humidity data
+                ssd1306_display_text(&GDisplay_OLED, 3,GAuxs,strlen(GAuxs),false);      //display the humidity data
+                sprintf(GAuxs, "Brilho    = %3d ", GRegistro1.Brilho);
+                ssd1306_display_text(&GDisplay_OLED, 4,GAuxs,strlen(GAuxs),false);      //display the humidity data
+
+                sprintf(GAuxs, "%02d/%02d/%04d %02d:%02d:%02d", 
+                        GRegistro1.Dia, GRegistro1.Mes, GRegistro1.Ano, 
+                        GRegistro1.Hora, GRegistro1.Minuto, GRegistro1.Segundo); 
+                ssd1306_display_text(&GDisplay_OLED, 5,GAuxs,strlen(GAuxs),false);      //display the date and time   
+
+                sprintf(GAuxs, "Set Point = %2d'C", GSetPoint_Temperatura);          //formata linha do setpoint
+                ssd1306_display_text(&GDisplay_OLED, 6, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
+                if ( GRele_Ativo)
+                     ssd1306_display_text(&GDisplay_OLED, 7, "Rele: Ligado"   , 16, true); // Exibe no OLED
+                else ssd1306_display_text(&GDisplay_OLED, 7, "Rele: Desligado", 16, true); // Exibe no OLED
+                break;
+
+        case MENU_TELA_SETPOINT:
+                ssd1306_display_text(&GDisplay_OLED, 0, "1 Setpoint     ", 16, true);
+                ssd1306_display_text(&GDisplay_OLED, 1, "+", 1, false);
+                ssd1306_display_text(&GDisplay_OLED, 2, "-", 2, false);
+                sprintf(GAuxs, "Set Point = %2d'C", GSetPoint_Temperatura);          //formata linha do setpoint
+                ssd1306_display_text(&GDisplay_OLED, 3, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
+                break;
+
+        case MENU_TELA_CONTROLE:
+            ssd1306_display_text(&GDisplay_OLED, 0, "2 Controle     ", 16, true);
+            break;
+
+        case MENU_TELA_ARQUIVO:
+            ssd1306_display_text(&GDisplay_OLED, 0, "3 Arquivo      ", 16, true);
+            break;
+
+        default:
+            ssd1306_display_text(&GDisplay_OLED, 0, "Tela Invalida  ", 16, true);
+            break;
+    }
 
 }
 
@@ -335,29 +465,23 @@ void app_main(void)
     LDR_ADC_Inicia();
     Inicia_os_GPIO();  // Inicia as entradas e saídas do GPIO
     ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura ); // Le o setpoint da NVS
+    
+    GMenu_Tela_Atual = 0;
+    Tela_OLED_Escreve();
 
-    ssd1306_display_text(&GDisplay_OLED,0, TAG_VERSAO     , strlen ( TAG_VERSAO ), false); 
-    ssd1306_display_text(&GDisplay_OLED,1,"Rogerio IFCE" , 12, false); 
 
     while(1)
     {   LDR_ADC_Ler( &GRegistro1.Brilho );          //read the LDR data
         DHT11_Leitura();
         RTC_DS3231_Leitura();  
 
-        sprintf(GAuxs, "Temperat. = %2d'C", GRegistro1.Temperatura);                       //format the temperature data   
-        ssd1306_display_text(&GDisplay_OLED,2,GAuxs,strlen(GAuxs),false);      //display the temperature data
-        sprintf(GAuxs, "Umidade   = %2d %%", GRegistro1.Umidade);                        //format the humidity data
-        ssd1306_display_text(&GDisplay_OLED,3,GAuxs,strlen(GAuxs),false);      //display the humidity data
-        sprintf(GAuxs, "Brilho    = %3d ", GRegistro1.Brilho);
-        ssd1306_display_text(&GDisplay_OLED,4,GAuxs,strlen(GAuxs),false);      //display the humidity data
+        Tela_OLED_Escreve();
 
         ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura); 
         
-        //RTC_DS3231_Mostra_Hora( 5 ); // Mostra a hora no display OLED
-        
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
 
-        Termostato_Processa( 6, 7);                               // Processa o rele de acordo com a temperatura lida
+        Termostato_Processa( );                               // Processa o rele de acordo com a temperatura lida
         
         vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
     }
