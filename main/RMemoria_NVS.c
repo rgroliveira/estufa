@@ -14,6 +14,7 @@
 const char *TAG_NVS = "Memoria NVS";                                                 //define the tag for the log
     
 //int16_t     GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
+#define CONFIG_ESTUFA_CONTROLE_DEFAULT  0
 
 char ssid[32];                                                               //variable to store the ssid
 char GSenha[32];                                                          //variable to store the password
@@ -97,6 +98,71 @@ void ESTUFA_NVS_Setpoint_Grava( int8_t SetPoint_Memoria)
     {
         ESP_LOGI(TAG_NVS, "Writing setpoint to NVS ... ");                                    //log the action
         Erro = nvs_set_i8(nvs_handle, "setpoint", SetPoint_Memoria);                                //write the setpoint to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                            //log the action
+        Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+        nvs_close(nvs_handle);                                                              //close the nvs handle    
+    }
+}
+
+//===============================================================
+void ESTUFA_NVS_Controle_Le( int8_t *Controle_Memoria)
+{  // Função para ler o Modo de controle na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+    } 
+    else 
+    {
+        ESP_LOGI(TAG_NVS, "Lendo o modo de controle na NVS ... ");                                    //log the action
+        Erro = nvs_get_i8(nvs_handle, "controle", Controle_Memoria);                                //read the setpoint from the nvs
+        switch (Erro)                                                                        //check the return of the function
+        {
+            case ESP_OK:                                                                    //if the function returns ESP_OK
+                ESP_LOGI(TAG_NVS, "Done");                                                    //log the action
+                ESP_LOGI(TAG_NVS, "Modo controle = %" PRIu8, *Controle_Memoria);                              //log the value read
+                break;
+            case ESP_ERR_NVS_NOT_FOUND:                                                     //if the value was not found
+                ESP_LOGI(TAG_NVS, "Esta variável ainda não foi inicializada!");                        //log the action
+                ESP_LOGI(TAG_NVS, "Inicializando o Mode de Controle para %d", CONFIG_ESTUFA_CONTROLE_DEFAULT);            //log the action
+                *Controle_Memoria = CONFIG_ESTUFA_CONTROLE_DEFAULT;                                                //initialize the setpoint
+                //Write setpoint to NVS
+                ESP_LOGI(TAG_NVS, "Escrevendo o modo de controle na NVS ... ");
+                Erro = nvs_set_i8(nvs_handle, "controle", *Controle_Memoria);
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");
+                Erro = nvs_commit(nvs_handle);                                
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");
+                break;
+            default :
+                ESP_LOGI(TAG_NVS, "Error (%s) reading!", esp_err_to_name(Erro));
+        }
+        nvs_close(nvs_handle);                                                              //close the nvs handle    
+    }
+
+}   
+
+//===============================================================
+void ESTUFA_NVS_Controle_Grava( int8_t Controle_Memoria)
+{ // Função para gravar o modo de controle na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    //Escreve modo de controle na NVS
+    Erro = nvs_open("controle", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+    } 
+    else 
+    {
+        ESP_LOGI(TAG_NVS, "Escrevendo o modo de controle para NVS ... ");                                    //log the action
+        Erro = nvs_set_i8(nvs_handle, "controle", Controle_Memoria);                                //write the setpoint to the nvs
         ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                            //log the action
         Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
         ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action

@@ -235,16 +235,24 @@ uint8_t DHT11_Leitura(void)
 void Termostato_Processa( void )
 // Processa o rele de acordo com a temperatura lida, e escreve no display OLED
 { 
-    if (GRegistro1.Temperatura > GSetPoint_Temperatura)  // Se a temperatura for maior que o set point
-    { 
-        gpio_set_level(PINO_RELE, 0);  // Desliga o relé
-        GRele_Ativo = 0;               // Rele Inativo
-    }
-    else
-    {
-        gpio_set_level(PINO_RELE, 1);  // Liga o relé
-        GRele_Ativo = 1;               // Rele Ativo
-    }
+    switch (GModo_Controle) 
+    { // Verifica o modo de controle
+        case MODO_AUTOMATICO: // Controle automático
+                                    if (GRegistro1.Temperatura > GSetPoint_Temperatura)  // Se a temperatura for maior que o set point
+                                            GRele_Ativo = 0;               // Rele Inativo
+                                    else  GRele_Ativo = 1;               // Rele Ativo
+                                    break;
+
+        case MODO_MANUAL_LIGADO:    GRele_Ativo = 1;
+                                    break;
+        case MODO_MANUAL_DESLIGADO: GRele_Ativo = 0; // Desativa o relé manualmente
+                                    break;      
+        default: // Modo desconhecido
+                                    GRele_Ativo = 0; // Desativa o relé por segurança
+                                    break;      
+    }   
+    
+  gpio_set_level(PINO_RELE, GRele_Ativo);   
 }
 
 //=============================================================================
@@ -274,35 +282,46 @@ void buttonTask(void *pvpameters)
     {
         Tempo_Botao_Pressionado = Tempo_Atual;                  // Atualiza o tempo do último pressionamento do botão
 
-        if ((Numero_Pino == PINO_BOTAO_INCREMENTA) && (GMenu_Tela_Atual == MENU_TELA_SETPOINT))               // Checa se o botão 1 foi pressionado
-            { GSetPoint_Temperatura++;                          // Aumenta o set point de temperatura
-              Termostato_Processa();
-              ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
-              Tela_OLED_Escreve();
+    // Dentro do Menu Setpoint        
+        if (GMenu_Tela_Atual == MENU_TELA_SETPOINT)
+        { // Se estiver na tela de setpoint, processa os botões de incremento e decremento
+            if (Numero_Pino == PINO_BOTAO_INCREMENTA )               
+            {   GSetPoint_Temperatura++;                          // Aumenta o set point de temperatura
+                Termostato_Processa();
+                ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
             };
-        if ( (Numero_Pino == PINO_BOTAO_DECREMENTA) && (GMenu_Tela_Atual == MENU_TELA_SETPOINT))               // Checa se o botão 2 foi pressionado
-            { GSetPoint_Temperatura--;                          // Decrementa o set point de temperatura
-              Termostato_Processa();
-              ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
-              Tela_OLED_Escreve();
+            if (Numero_Pino == PINO_BOTAO_DECREMENTA)               
+            {   GSetPoint_Temperatura--;                          // Decrementa o set point de temperatura
+                Termostato_Processa();
+                ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o set point na NVS
             };
+        }
 
+        if (GMenu_Tela_Atual == MENU_TELA_CONTROLE)
+        { // Se estiver na tela de controle, processa os botões de controle manual
+            if ((Numero_Pino == PINO_BOTAO_CIMA) && (GModo_Controle > MODO_AUTOMATICO))
+                GModo_Controle--;
+            if ((Numero_Pino == PINO_BOTAO_BAIXO) && (GModo_Controle < MODO_MANUAL_DESLIGADO))
+                GModo_Controle++;
 
+            ESP_LOGI(TAG_VERSAO, "Modo controle = %d", GModo_Controle);
+            ESTUFA_NVS_Controle_Grava( GModo_Controle );        // Grava o modo de controle na NVS
+        }
+
+        // Navegação horizontal no menu
         if( Numero_Pino == PINO_BOTAO_DIREITA)
         {  GMenu_Tela_Atual++; // Incrementa a tela do menu
            if (GMenu_Tela_Atual >= MAX_MENU_TELAS) 
                   GMenu_Tela_Atual = 0; // Reseta para a primeira tela se ultrapassar o limite
            ssd1306_clear_screen(&GDisplay_OLED,false);                  //Apaga a tela OLED
-           Tela_OLED_Escreve(); // Escreve a tela atual no OLED
         }  
         if( Numero_Pino == PINO_BOTAO_ESQUERDA)
         {  GMenu_Tela_Atual--; // Decrementa a tela do menu
            if (GMenu_Tela_Atual < 0) 
                   GMenu_Tela_Atual = MAX_MENU_TELAS - 1; // Reseta para a última tela se ultrapassar o limite
            ssd1306_clear_screen(&GDisplay_OLED,false);                  //Apaga a tela OLED
-           Tela_OLED_Escreve(); // Escreve a tela atual no OLED
         }  
-    
+    Tela_OLED_Escreve();
     }
   }
 }
@@ -431,24 +450,29 @@ void Tela_OLED_Escreve( )
                 break;
 
         case MENU_TELA_SETPOINT:
-                ssd1306_display_text(&GDisplay_OLED, 0, "1 Setpoint     ", 16, true);
-                ssd1306_display_text(&GDisplay_OLED, 1, "+", 1, false);
-                ssd1306_display_text(&GDisplay_OLED, 2, "-", 2, false);
+                ssd1306_display_text(&GDisplay_OLED, 0, "====SETPOINT===", 16, false);
+                ssd1306_display_text(&GDisplay_OLED, 2, "+: Incrementa  ", 16, false);
+                ssd1306_display_text(&GDisplay_OLED, 3, "-: Decrementa  ", 16, false);
                 sprintf(GAuxs, "Set Point = %2d'C", GSetPoint_Temperatura);          //formata linha do setpoint
-                ssd1306_display_text(&GDisplay_OLED, 3, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
+                ssd1306_display_text(&GDisplay_OLED, 4, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
                 break;
 
         case MENU_TELA_CONTROLE:
-            ssd1306_display_text(&GDisplay_OLED, 0, "2 Controle     ", 16, true);
-            break;
+                ssd1306_display_text(&GDisplay_OLED, 0, "===CONTROLE====", 16, false);
+                ssd1306_display_text(&GDisplay_OLED, 2, "A: Automatico  ", 16, GModo_Controle == MODO_AUTOMATICO);
+                ssd1306_display_text(&GDisplay_OLED, 3, "L: Ligado      ", 16, GModo_Controle == MODO_MANUAL_LIGADO);
+                ssd1306_display_text(&GDisplay_OLED, 4, "D: Desligado   ", 16, GModo_Controle == MODO_MANUAL_DESLIGADO);
+                break;
 
         case MENU_TELA_ARQUIVO:
-            ssd1306_display_text(&GDisplay_OLED, 0, "3 Arquivo      ", 16, true);
-            break;
+                ssd1306_display_text(&GDisplay_OLED, 0, "====ARQUIVO====", 16, true);
+                ssd1306_display_text(&GDisplay_OLED, 2, "L: Lista tudo  ", 16, false);
+                ssd1306_display_text(&GDisplay_OLED, 3, "Z: Apaga tudo  ", 16, false);
+                break;
 
         default:
-            ssd1306_display_text(&GDisplay_OLED, 0, "Tela Invalida  ", 16, true);
-            break;
+                ssd1306_display_text(&GDisplay_OLED, 0, "Tela Invalida  ", 16, true);
+                break;
     }
 
 }
@@ -459,13 +483,16 @@ void Tela_OLED_Escreve( )
 void app_main(void)
 {
     uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
-   
+    int8_t Auxi; 
+
     ESTUFA_NVS_Inicializar();
     Display_OLED_Inicia( 1 );
     LDR_ADC_Inicia();
-    Inicia_os_GPIO();  // Inicia as entradas e saídas do GPIO
-    ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura ); // Le o setpoint da NVS
-    
+    Inicia_os_GPIO();                                   // Inicia as entradas e saídas do GPIO
+    ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura );   // Le o setpoint da NVS
+    ESTUFA_NVS_Controle_Le( &Auxi );          // Le o modo de controle da NVS
+    GModo_Controle = Auxi;
+
     GMenu_Tela_Atual = 0;
     Tela_OLED_Escreve();
 
