@@ -138,7 +138,8 @@ enum Tipo_Modo_Controle {
     MODO_AUTOMATICO = 0, // Controle automático
     MODO_MANUAL_LIGADO,
     MODO_MANUAL_DESLIGADO
-} GModo_Controle; // Variável global para armazenar o modo de controle
+};
+int8_t GModo_Controle; // Variável global para armazenar o modo de controle
 
 int8_t GMenu_Coluna_Atual = 0; // Coluna atual do menu
 
@@ -483,20 +484,19 @@ void Tela_OLED_Escreve( )
 void app_main(void)
 {
     uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
-    int8_t Auxi; 
 
     ESTUFA_NVS_Inicializar();
     Display_OLED_Inicia( 1 );
+    // NVS_Apaga_Tudo( );
+    // NVS_Lista_Entradas( );
     LDR_ADC_Inicia();
     Inicia_os_GPIO();                                   // Inicia as entradas e saídas do GPIO
     ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura );   // Le o setpoint da NVS
-    ESTUFA_NVS_Controle_Le( &Auxi );          // Le o modo de controle da NVS
-    GModo_Controle = Auxi;
+    ESTUFA_NVS_Controle_Le( &GModo_Controle );          // Le o modo de controle da NVS
 
     GMenu_Tela_Atual = 0;
     Tela_OLED_Escreve();
-
-
+ 
     while(1)
     {   LDR_ADC_Ler( &GRegistro1.Brilho );          //read the LDR data
         DHT11_Leitura();
