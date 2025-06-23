@@ -15,13 +15,12 @@ const char *TAG_NVS = "Memoria NVS";                                            
     
 //int16_t     GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
 #define CONFIG_ESTUFA_CONTROLE_DEFAULT  0
-
-char ssid[32];                                                               //variable to store the ssid
-char GSenha[32];                                                          //variable to store the password
-
+#define NVS_NOME_PARTICAO "ParticaoNVS" // define the name of the NVS partition
 #define NVS_CHAVE_MODO_CONTROLE "ModoControle" // define the key for the control mode in NVS
 #define NVS_CHAVE_SET_POINT "set_point" // define the key for the set point in NVS
 
+char ssid[32];                                                               //variable to store the ssid
+char GSenha[32];                                                          //variable to store the password
 
 //===============================================================
 void ESTUFA_NVS_Inicializar(void)
@@ -45,7 +44,7 @@ void ESTUFA_NVS_Setpoint_Le( int8_t *SetPoint_Memoria)
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
   
     //read setpoint from NVS
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
     if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
     {
         //log the error
@@ -62,7 +61,7 @@ void ESTUFA_NVS_Setpoint_Le( int8_t *SetPoint_Memoria)
                 ESP_LOGI(TAG_NVS, "Setpoint = %" PRIu8, *SetPoint_Memoria);                              //log the value read
                 break;
             case ESP_ERR_NVS_NOT_FOUND:                                                     //if the value was not found
-                ESP_LOGI(TAG_NVS, "The value is not initialized yet!");                        //log the action
+                ESP_LOGI(TAG_NVS, "A variavel 'SetPoint' ainda não foi inicializada!");                        //log the action
                 ESP_LOGI(TAG_NVS, "Initializing setpoint to %d", CONFIG_ESTUFA_SETPOINT_DEFAULT);            //log the action
                 *SetPoint_Memoria = CONFIG_ESTUFA_SETPOINT_DEFAULT;                                                //initialize the setpoint
                 //Write setpoint to NVS
@@ -87,7 +86,7 @@ void ESTUFA_NVS_Setpoint_Grava( int8_t SetPoint_Memoria)
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
   
     //write setpoint to NVS
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
     if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
     {
         ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
@@ -110,7 +109,7 @@ void NVS_Le_SSID( void)
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
   
     //read ssid from NVS using string
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
     if (Erro != ESP_OK)                                                                          //check if the partition was opened successfully
     {
         //log the error
@@ -152,7 +151,7 @@ void    NVS_Le_Senha()
     esp_err_t    Erro;
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
     //Le uma"senha da NVS usando string
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                      //open the nvs partition
     if (Erro != ESP_OK)                                                                          //check if the partition was opened successfully
     {
         //log the error
@@ -194,7 +193,7 @@ void ESTUFA_NVS_Controle_Le( int8_t *Modo)
     esp_err_t    Erro;
     nvs_handle_t nvs_handle;     
    
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
     if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
     {
         //log the error
@@ -211,7 +210,7 @@ void ESTUFA_NVS_Controle_Le( int8_t *Modo)
                 ESP_LOGI(TAG_NVS, "Modo controle = %" PRIu8, *Modo);                    
                 break;
             case ESP_ERR_NVS_NOT_FOUND:                                                 
-                ESP_LOGI(TAG_NVS, "Esta variável ainda não foi inicializada!");         
+                ESP_LOGI(TAG_NVS, "A variavel 'ModoControle' ainda não foi inicializada!" );         
                 ESP_LOGI(TAG_NVS, "Inicializando o Mode de Controle para %d", CONFIG_ESTUFA_CONTROLE_DEFAULT); 
                 *Modo = CONFIG_ESTUFA_CONTROLE_DEFAULT;                                                
 
@@ -236,7 +235,7 @@ void ESTUFA_NVS_Controle_Grava( int8_t Modo)
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
   
     //Escreve modo de controle na NVS
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
     if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
     {
         //log the error
@@ -275,7 +274,7 @@ void NVS_Apaga_Tudo( void)
     esp_err_t Erro;
     nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
   
-    Erro = nvs_open("storage", NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
     if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
     {
         //log the error
