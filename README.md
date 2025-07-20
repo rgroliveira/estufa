@@ -1,6 +1,66 @@
-# Estufa Ditatica 1.0
 Rogerio ifce.edu.br
+**# Estufa Ditatica 1.0**
+Projeto submetido ao curso de Sistemas embarcados como atividade final.
 
+**## Descrição**
+O sistema monitora a temperatura, umidade e luminosidade de uma estufa através 
+dos sensores DHT11 e LDR, integrantes do módulo de desenvolvimento LAB01. Os 
+valores medidos são apresentados em tempo real num display OLED.
+
+Um rele é acionado, pino GPIO 14 ou LED vermelho no LAB01, quando a temperatura 
+lida no sensor é menor que o valor do Setpoint. Também esta indicação é 
+apresentada no disply na tela principal.
+
+São três modos de controle da saída: 
+  Automático, 
+  Sempre ligado,
+  Sempre desligado.
+
+Os parâmetros do Setpoint e Modo de controle sempre tem uma cópia gravada na 
+memória NVS, para  manter a integridade numa falha de energia ou reset. 
+Os valores são gravados quando são alterados ou na inicialização.
+
+Os valores e parâmentros do sistema podem ser monitorados pela porta serial.
+
+O registro de dados está num arquivo texto na memória NVS interna ao ESP32
+
+
+**## Estrutura do Menu**
+
+ Teclas de Navegação: Cima (BT1), Baixo (BT4), Esquerda (BT2) e Direira (BT3)
+ Tecla de comando: OK (BT5) e ESC (BT6)
+ Tecla de Controle do Setpoint, dentro do menu setpoint '+' (BT6) e '-' (BT5)
+
+ Telas do Menu:
+
+├─ 1 Principal
+├     Estufa <versão>
+├     Rogerio IFCE
+├     Temperat. = 
+├     Umidade   = 
+├     Brilho    = 
+├     00/00/0000 00:00
+├     Set point = 
+├     Rele: Desligado
+|
+├─ 2  ===SETPOINT==="
+├     +: Incrementa  "
+├     -: Decrementa  "
+├     Set Point = xx °C
+|
+├─ 3  ===CONTROLE====
+├     A: Automatico  
+├     L: Ligado      
+├     D: Desligado   
+├   
+├     <OK> Para salvar
+|
+├─ 4  ====ARQUIVO===="
+├     L: Lista tudo  "
+├     Z: Apaga tudo  "
+
+
+**# INSTRUÇÕES**
 ##Projeto Final: Rogerio
 1	Descrição do Projeto
    O projeto consiste em criar um sistema embarcado para monitorar e controlar os parâmetros 
@@ -44,24 +104,3 @@ Rogerio ifce.edu.br
 //        factory,    app,  factory,  0x10000, 1M,
 //        littlefs,data,spiffs,,256K,,
 
-
-## Brainstorm Menu
-```
-├─ 1 Principal
-├─ 2 Setpoint
-├─ 2.1 Setpoint
-├─ 3 Modo
-├─ 3.1 Automatico
-├─ 3.2 Ligado
-├─ 3.3 Desligado
-├─ 4 Ajusta Hora
-├─ 4.1 Hora
-├─ 4.2 Minuto
-├─ 4.3 Segundo
-├─ 5 Ajusta data
-├─ 5.1 Dia
-├─ 5.2 Mes
-└─ 5.3 Ano
-```
-
-teste
