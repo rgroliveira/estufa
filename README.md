@@ -42,19 +42,19 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 ├     00/00/0000 00:00
 ├     Set point = 
 ├     Rele: Desligado
-|
+
 ├─ 2  ===SETPOINT==="
 ├     +: Incrementa  "
 ├     -: Decrementa  "
 ├     Set Point = xx °C
-|
+
 ├─ 3  ===CONTROLE====
 ├     A: Automatico  
 ├     L: Ligado      
 ├     D: Desligado   
 ├   
 ├     <OK> Para salvar
-|
+
 ├─ 4  ====ARQUIVO===="
 ├     L: Lista tudo  "
 ├     Z: Apaga tudo  "
