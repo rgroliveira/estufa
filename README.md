@@ -1,8 +1,8 @@
 Rogerio ifce.edu.br
-**# Estufa Ditatica 1.0**
+# Estufa Ditatica 1.0
 Projeto submetido ao curso de Sistemas embarcados como atividade final.
 
-**## Descrição**
+## Descrição
 O sistema monitora a temperatura, umidade e luminosidade de uma estufa através 
 dos sensores DHT11 e LDR, integrantes do módulo de desenvolvimento LAB01. Os 
 valores medidos são apresentados em tempo real num display OLED.
@@ -25,7 +25,7 @@ Os valores e parâmentros do sistema podem ser monitorados pela porta serial.
 O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 
 
-**## Estrutura do Menu**
+## Estrutura do Menu
 
  Teclas de Navegação: Cima (BT1), Baixo (BT4), Esquerda (BT2) e Direira (BT3)
  Tecla de comando: OK (BT5) e ESC (BT6)
@@ -60,8 +60,7 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 ├     Z: Apaga tudo  "
 
 
-**# INSTRUÇÕES**
-##Projeto Final: Rogerio
+## Instrucoes
 1	Descrição do Projeto
    O projeto consiste em criar um sistema embarcado para monitorar e controlar os parâmetros 
    de uma estufa. O sistema utiliza sensores para medir temperatura, umidade e luminosidade, 
@@ -92,7 +91,7 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 3 Estrutura do Projeto:
   O projeto deve ser organizado em bibliotecas (componentes) para modularidade e reutilização de código.
 
-# Arquivos no LittleFS
+## Arquivos no LittleFS
 // Atencao: No menuconfig, configure:
 // "Partition Table" -> "Custom partition table CSV" 
 // File -> "partition.csv"
