@@ -444,8 +444,6 @@ void Tela_OLED_Escreve( )
                         ssd1306_display_text(&GDisplay_OLED, 7, "Modo: Desconhecido", 16, true);
                         break;
                 }
-
-
                 break;
 
         case MENU_TELA_ARQUIVO:
@@ -466,7 +464,7 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
 { 
 
     // Navegação horizontal no menu
-    if ((Botao_Pressionado == PINO_BOTAO_DIREITA) && (GMenu_Tela_Atual < MAX_MENU_TELAS) )
+    if ((Botao_Pressionado == PINO_BOTAO_DIREITA) && (GMenu_Tela_Atual < MAX_MENU_TELAS-1) )
     {  GMenu_Tela_Atual++; // Incrementa a tela do menu
        GMenu_Linha_Atual = 0;
        ssd1306_clear_screen(&GDisplay_OLED,false);                  //Apaga a tela OLED
@@ -575,7 +573,7 @@ void app_main(void)
              ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura); 
         };
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
-       
+      
         vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
     }
 }
