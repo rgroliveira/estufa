@@ -32,7 +32,7 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
  Tecla de Controle do Setpoint, dentro do menu setpoint '+' (BT6) e '-' (BT5)
 
  Telas do Menu:
-```
+
 ├─ 1 Principal
 ├     Estufa <versão>
 ├     Rogerio IFCE
