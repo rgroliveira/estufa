@@ -65,11 +65,11 @@ void ESTUFA_NVS_Setpoint_Le( int8_t *SetPoint_Memoria)
                 ESP_LOGI(TAG_NVS, "Initializing setpoint to %d", CONFIG_ESTUFA_SETPOINT_DEFAULT);            //log the action
                 *SetPoint_Memoria = CONFIG_ESTUFA_SETPOINT_DEFAULT;                                                //initialize the setpoint
                 //Write setpoint to NVS
-                ESP_LOGI(TAG_NVS, "Writing setpoint to NVS ... ");                              //log the action
+                ESP_LOGI(TAG_NVS, "Gravando setpoint para NVS ... ");                              //log the action
                 Erro = nvs_set_i8(nvs_handle, NVS_CHAVE_SET_POINT, *SetPoint_Memoria);                         //write the setpoint to the nvs
-                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                    //log the action
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Falhou!" : "Feito");                    //log the action
                 Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
-                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+                ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Falhou!" : "Feito");               //log the action
                 break;
             default :
                 ESP_LOGI(TAG_NVS, "Error (%s) reading!", esp_err_to_name(Erro));               //log the error
@@ -93,11 +93,16 @@ void ESTUFA_NVS_Setpoint_Grava( int8_t SetPoint_Memoria)
     } 
     else 
     {
-        ESP_LOGI(TAG_NVS, "Writing setpoint to NVS ... ");                                    //log the action
-        Erro = nvs_set_i8(nvs_handle, NVS_CHAVE_SET_POINT, SetPoint_Memoria);                                //write the setpoint to the nvs
-        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                            //log the action
+        ESP_LOGI(TAG_NVS, "Escrevendo setpoint na memoria NVS ... ");
+        Erro = nvs_set_i8(nvs_handle, NVS_CHAVE_SET_POINT, SetPoint_Memoria);
+        if (Erro != ESP_OK) 
+           ESP_LOGE(TAG_NVS, "Error (%s) writing setpoint!", esp_err_to_name(Erro));            //log the error
+        //ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                            //log the action
+        
         Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
-        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+        if (Erro != ESP_OK) 
+           ESP_LOGE(TAG_NVS, "Error (%s) committing setpoint!", esp_err_to_name(Erro));            //log the error
+        //ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
         nvs_close(nvs_handle);                                                              //close the nvs handle    
     }
 }

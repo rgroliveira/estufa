@@ -1,38 +1,6 @@
 // Estufa
 static const char *TAG_VERSAO = "Estufa r1.01";
 
-/*
-Projeto Final: Rogerio
-1	Descrição do Projeto
-   O projeto consiste em criar um sistema embarcado para monitorar e controlar os parâmetros 
-   de uma estufa. O sistema utiliza sensores para medir temperatura, umidade e luminosidade, 
-   exibindo os valores em um display OLED. O usuário poderá ajustar o set point de temperatura 
-   por meio de um menu interativo no display. Além disso, será possível registrar os dados 
-   monitorados em um arquivo na memória do ESP32 e acessá-los posteriormente via comunicação 
-   serial.
-
-2 Requisitos do Projeto
-2.1 Monitoramento:
-    DHT11: Monitorar temperatura e umidade.
-    LDR: Monitorar a luminosidade da estufa.
-
-2.2 Controle e Exibição:
-    Display OLED: Exibir os valores de temperatura, umidade e luminosidade em tempo real.
-    Implementar um menu interativo para o ajuste do set point de temperatura e outras configurações.
-
-2.3 Configuração e Operação:
-   O usuário poderá ligar/desligar o sistema de controle manualmente.
-   Configurar o menuconfig para permitir ajustes de pré-compilação, como pinos dos sensores e 
-   parâmetros padrões, etc
-
-2.4 Registro de Dados:
-   Implementar o SPIFFS ou LittleFS para salvar os valores monitorados em um arquivo log.txt.
-   O usuário poderá habilitar/desabilitar o registro de dados via menu interativo.
-   Implementar um comando serial para leitura do arquivo de log, exibindo os dados salvos no terminal.
-
-3 Estrutura do Projeto:
-  O projeto deve ser organizado em bibliotecas (componentes) para modularidade e reutilização de código.
-*/
 
 // Repopsitorio de Componentes: 
 //    DHT11:        https://github.com/UncleRus/esp-idf-lib
@@ -50,6 +18,9 @@ Projeto Final: Rogerio
 //        phy_init,   data, phy,      0xf000,  0x1000,
 //        factory,    app,  factory,  0x10000, 1M,
 //        littlefs,data,spiffs,,256K,,
+
+// Hora do sistema
+// https://docs-espressif-com.translate.goog/projects/esp-idf/en/stable/esp32/api-reference/system/system_time.html?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc
 
 
 // No Franzininho  com LAB01, para Display OLED SSD1306: SCL 9, SDA 8 e RESET GPIO -1
@@ -69,7 +40,8 @@ Projeto Final: Rogerio
 #include "dht.h"      // Biblioteca DHT para DHT11
 #include "ssd1306.h"  // Biblioteca SSD1306 para OLED
 #include "RMemoria_NVS.h" 
- 
+
+
 
 //Pinos
 #define PINO_LDR                1   //Pino do LDR, GPIO 34 é um pino apenas de entrada
@@ -119,8 +91,11 @@ int8_t      GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definid
 int16_t     GTemperatura_Max        = CONFIG_ESTUFA_MAX_TEMP;      // definido no menuconfig
 int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;      // definido no menuconfig
 uint8_t     GRele_Ativo = 0;            // Rele Ativo ou Inativo
+uint8_t     GRele_Estado_Anterior = 0;  // Usado para detectar transicao do relé
+
 char        GAuxs[40];                  //String auxiliar para formatar os dados (aumentado para evitar overflow)
 SSD1306_t   GDisplay_OLED;              //Device do OLED SSD1306
+long        GInstante_Inicial = 0;      // Instante em que o sistema é iniciado para controle de tempo
 
 
 // Menus
@@ -241,9 +216,9 @@ void Termostato_Processa( void )
     switch (GModo_Controle) 
     { // Verifica o modo de controle
         case MODO_AUTOMATICO: // Controle automático
-                                    if (GRegistro1.Temperatura > GSetPoint_Temperatura)  // Se a temperatura for maior que o set point
-                                            GRele_Ativo = 0;               // Rele Inativo
-                                    else  GRele_Ativo = 1;               // Rele Ativo
+                                    if (GRegistro1.Temperatura <= GSetPoint_Temperatura)  // Se a temperatura for menor que o set point
+                                          GRele_Ativo = 1;
+                                    else  GRele_Ativo = 0; 
                                     break;
 
         case MODO_MANUAL_LIGADO:    GRele_Ativo = 1;
@@ -279,13 +254,13 @@ void buttonTask(void *pvpameters)
   {
     xQueueReceive(gpio_evt_queue, &Numero_Pino, portMAX_DELAY); // Espera por eventos de interrupção de GPIO
     ESP_LOGV(TAG_VERSAO, "Botao GPIO[%li]", Numero_Pino);        // Log the GPIO number that triggered the interrupt
-    TickType_t Tempo_Atual = xTaskGetTickCount();               // Pega o tempo atual da tarefa
+    TickType_t GInstante_Inicial = xTaskGetTickCount();               // Pega o tempo atual da tarefa
 
     
 
-    if (Tempo_Atual - Tempo_Botao_Pressionado >= pdMS_TO_TICKS(250)) // Verifica se o tempo desde o último pressionamento é maior que 250ms
+    if (GInstante_Inicial - Tempo_Botao_Pressionado >= pdMS_TO_TICKS(250)) // Verifica se o tempo desde o último pressionamento é maior que 250ms
     {
-        Tempo_Botao_Pressionado = Tempo_Atual;                  // Atualiza o tempo do último pressionamento do botão
+        Tempo_Botao_Pressionado = GInstante_Inicial;                  // Atualiza o tempo do último pressionamento do botão
         Processa_Botoes_Teclado( Numero_Pino );
         Tela_OLED_Escreve();
     }
@@ -542,12 +517,14 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
 
 }
 
+
 //=============================================================================
 //=============================================================================
 //=============================================================================
 void app_main(void)
 {
     uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
+    long Instante_Transicao_Rele;       // Instante da transição do relé       
 
     ESTUFA_NVS_Inicializar();
     Display_OLED_Inicia( 1 );
@@ -561,6 +538,10 @@ void app_main(void)
     GMenu_Tela_Atual = 0;
     Tela_OLED_Escreve();
  
+    GInstante_Inicial = xTaskGetTickCount();
+    ESP_LOGI(TAG_VERSAO, "Iniciando o sistema Estufa r1.01");   
+    ESP_LOGI(TAG_VERSAO, "Instante = %ld", GInstante_Inicial);
+
     while(1)
     {   LDR_ADC_Ler( &GRegistro1.Brilho );          //read the LDR data
         DHT11_Leitura();
@@ -568,9 +549,15 @@ void app_main(void)
         Tela_OLED_Escreve();
         Termostato_Processa( );                               // Processa o rele de acordo com a temperatura lida
 
+        if ( GRele_Estado_Anterior != GRele_Ativo)  // Rele mudou de estado
+        {   GRele_Estado_Anterior = GRele_Ativo; // Atualiza o estado anterior do relé
+            Instante_Transicao_Rele = xTaskGetTickCount(); // Armazena o instante da transição do relé
+            ESP_LOGI(TAG_VERSAO, "Rele mudou de estado em: %ld ms", Instante_Transicao_Rele - GInstante_Inicial); // Loga a transição do relé
+        }
+
         if (GModo_Controle == MODO_AUTOMATICO)
         {
-             ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura); 
+             ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C, Rele = %d", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura, GRele_Ativo); 
         };
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
       

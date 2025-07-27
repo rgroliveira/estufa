@@ -93,15 +93,3 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 3 Estrutura do Projeto:
   O projeto deve ser organizado em bibliotecas (componentes) para modularidade e reutilização de código.
 
-## Arquivos no LittleFS
-// Atencao: No menuconfig, configure:
-// "Partition Table" -> "Custom partition table CSV" 
-// File -> "partition.csv"
-// Arquivo "partition.csv"
-//        # ESP-IDF Partition Table
-//        # Name, Type, SubType, Offset, Size, Flags
-//        nvs,        data, nvs,      0x9000,  0x6000,
-//        phy_init,   data, phy,      0xf000,  0x1000,
-//        factory,    app,  factory,  0x10000, 1M,
-//        littlefs,data,spiffs,,256K,,
-
