@@ -59,6 +59,11 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 ├─ 4  ====ARQUIVO===="
 ├     L: Lista tudo  "
 ├     Z: Apaga tudo  "
+├     G: Ativa Gravac"
+├     g: Para Gravaca"
+├ 
+├     <Gravando>
+
 ```
 
 

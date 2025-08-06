@@ -115,15 +115,16 @@ enum Tipo_Modo_Controle {
         MODO_MANUAL_DESLIGADO
 };
 
-int8_t GModo_Controle; // Variável global para armazenar o modo de controle
+int8_t GModo_Controle;         // Variável global para armazenar o modo de controle
 int8_t GMenu_Coluna_Atual = 0; // Coluna atual do menu
-int8_t GMenu_Linha_Atual = 0; // Sub-menu atual, usado para telas com sub-menus
+int8_t GMenu_Linha_Atual = 0;  // Sub-menu atual, usado para telas com sub-menus
+int8_t GModo_Gravacao = 0;     // Modo de gravação de arquivo, habilitado ou não
 
-int8_t GMatriz_Menu [MAX_MENUS_LINHAS][MAX_MENU_TELAS] = {
-    { 1, 2, 3, 4 }, // Linha 0 - Opções do menu
-    { 0, 1, 1, 1 }, // Linha 1 - Opções do menu
-    { 0, 0, 2, 0 }  // Linha 2 - Opções do menu
-};
+//int8_t GMatriz_Menu [MAX_MENUS_LINHAS][MAX_MENU_TELAS] = {
+//    { 1, 2, 3, 4 }, // Linha 0 - Opções do menu
+//    { 0, 1, 1, 1 }, // Linha 1 - Opções do menu
+//    { 0, 0, 2, 0 }  // Linha 2 - Opções do menu
+//};
 
 // Funcoes
 void Tela_OLED_Escreve( );
@@ -381,7 +382,7 @@ void Tela_OLED_Escreve( )
                 sprintf(GAuxs, "%02d/%02d/%04d %02d:%02d:%02d", 
                         GRegistro1.Dia, GRegistro1.Mes, GRegistro1.Ano, 
                         GRegistro1.Hora, GRegistro1.Minuto, GRegistro1.Segundo); 
-                ssd1306_display_text(&GDisplay_OLED, 5,GAuxs,strlen(GAuxs),false);      //display the date and time   
+//                ssd1306_display_text(&GDisplay_OLED, 5,GAuxs,strlen(GAuxs),false);      //display the date and time   
 
                 sprintf(GAuxs, "Set Point = %2d'C", GSetPoint_Temperatura);          //formata linha do setpoint
                 ssd1306_display_text(&GDisplay_OLED, 6, GAuxs, strlen(GAuxs),false);     //mostra o setpoint
@@ -425,6 +426,15 @@ void Tela_OLED_Escreve( )
                 ssd1306_display_text(&GDisplay_OLED, 0, "====ARQUIVO====", 16, true);
                 ssd1306_display_text(&GDisplay_OLED, 2, "L: Lista tudo  ", 16, GMenu_Linha_Atual == 0);
                 ssd1306_display_text(&GDisplay_OLED, 3, "Z: Apaga tudo  ", 16, GMenu_Linha_Atual == 1);
+                ssd1306_display_text(&GDisplay_OLED, 4, "G: Ativa Gravac", 16, GMenu_Linha_Atual == 2);
+                ssd1306_display_text(&GDisplay_OLED, 5, "g: Para Gravaca", 16, GMenu_Linha_Atual == 3);
+
+                if ( GModo_Gravacao == 1) // Se o modo de gravação estiver ativo
+                {   ssd1306_display_text(&GDisplay_OLED, 7, "   <Gravando>   ", 16, true);
+                }
+                else
+                {   ssd1306_display_text(&GDisplay_OLED, 7, "Nao Gravando    ", 16, false);
+                }
                 break;
 
         default:
@@ -489,24 +499,36 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
     { 
         if ((Botao_Pressionado == PINO_BOTAO_CIMA) && (GMenu_Linha_Atual > 0))
             GMenu_Linha_Atual--;
-        if ((Botao_Pressionado == PINO_BOTAO_BAIXO) && (GMenu_Linha_Atual < 1))
+        if ((Botao_Pressionado == PINO_BOTAO_BAIXO) && (GMenu_Linha_Atual < 3))
             GMenu_Linha_Atual++;
         if (Botao_Pressionado == PINO_BOTAO_OK)
         {   switch (GMenu_Linha_Atual) 
             { // Verifica a linha atual do menu
                 case 0: // Lista tudo
+                    GModo_Gravacao = 0; // Desativa o modo de gravação
+                    NVS_Lista_Entradas(); // Lista os valores armazenados na NVS
                     ESP_LOGI(TAG_VERSAO, "Listando os valores armazenados");
-                    
                     break;
                 case 1: // Apaga tudo
                     ESP_LOGI(TAG_VERSAO, "Apagando todos valores armazenados");
-                    //NVS_Apaga_Tudo(); // Apaga tudo da NVS
+                    GModo_Gravacao = 0; // Desativa o modo de gravação
+                    NVS_Apaga_Tudo(); // Apaga tudo da NVS
+                    break;
+                case 2: // Ativa gravação
+                    ESP_LOGI(TAG_VERSAO, "Ativando modo de gravação");
+                    GModo_Gravacao = 1; // Ativa o modo de gravação
+                    break;
+                case 3: // Para gravação
+                    ESP_LOGI(TAG_VERSAO, "Desativando modo de gravação");
+                    GModo_Gravacao = 0; // Desativa o modo de gravação
                     break;
                 default:
                     ESP_LOGW(TAG_VERSAO, "Opção inválida no menu Arquivo");
                     break;
             }
         };
+
+
         if (Botao_Pressionado == PINO_BOTAO_ESC)
         {   GMenu_Linha_Atual = 0; 
             GMenu_Tela_Atual  = 0;
