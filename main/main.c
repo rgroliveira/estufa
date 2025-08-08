@@ -74,7 +74,7 @@ static const char *TAG_ADC_LDR = "ADC1_0 LDR";
 // ADC
 adc_oneshot_unit_handle_t G_ADC1_Handle;                              //ADC1 Handle
 
-struct Tipo_Registro{
+typedef struct {
     int16_t Temperatura;    //Temperatura °C
     int16_t Umidade;        //Umidade em %
     int16_t Brilho;         //Brilho em mV
@@ -84,8 +84,9 @@ struct Tipo_Registro{
     uint8_t Hora;           //Hora
     uint8_t Minuto;         //Minuto
     uint8_t Segundo;        //Segundo
-   
-}  GRegistro1;
+
+}  Tipo_Registro;
+Tipo_Registro GRegistro1;
 
 int8_t      GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
 int16_t     GTemperatura_Max        = CONFIG_ESTUFA_MAX_TEMP;      // definido no menuconfig
@@ -508,6 +509,7 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
                     GModo_Gravacao = 0; // Desativa o modo de gravação
                     NVS_Lista_Entradas(); // Lista os valores armazenados na NVS
                     ESP_LOGI(TAG_VERSAO, "Listando os valores armazenados");
+                    NVS_Datalogger_Lista_Tudo( );
                     break;
                 case 1: // Apaga tudo
                     ESP_LOGI(TAG_VERSAO, "Apagando todos valores armazenados");
@@ -578,11 +580,16 @@ void app_main(void)
         }
 
         if (GModo_Controle == MODO_AUTOMATICO)
-        {
-             ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C, Rele = %d", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura, GRele_Ativo); 
+        {    ESP_LOGI(TAG_VERSAO,"Temperatura: %d'C, Umidade: %d%%, Brilho: %d, SP = %d'C, Rele = %d", GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho, GSetPoint_Temperatura, GRele_Ativo); 
         };
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
       
+        if ( GModo_Gravacao == 1) // Se o modo de gravação estiver ativo
+        {  sprintf(GAuxs, "T= %d'C, U= %d%%, B= %d", 
+                         GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho);
+            ESP_LOGI(TAG_VERSAO, "%s", GAuxs); // Loga os dados lidos
+**Continuar aqui            // NVS_Datalogger_Grava_Linha( Linha_Registro);
+        }
         vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
     }
 }

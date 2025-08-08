@@ -11,6 +11,7 @@
 #include "nvs.h"
 #include "esp_log.h"
 
+
 const char *TAG_NVS = "Memoria NVS";                                                 //define the tag for the log
     
 //int16_t     GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
@@ -18,6 +19,8 @@ const char *TAG_NVS = "Memoria NVS";                                            
 #define NVS_NOME_PARTICAO "ParticaoNVS" // define the name of the NVS partition
 #define NVS_CHAVE_MODO_CONTROLE "ModoControle" // define the key for the control mode in NVS
 #define NVS_CHAVE_SET_POINT "set_point" // define the key for the set point in NVS
+#define NVS_CHAVE_REGISTRO "DadosEstufa" // Armazena o registro de temperatura e umidade
+
 
 char ssid[32];                                                               //variable to store the ssid
 char GSenha[32];                                                          //variable to store the password
@@ -292,4 +295,64 @@ void NVS_Apaga_Tudo( void)
         ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
         nvs_close(nvs_handle);                                                              //close the nvs handle    
     }
+}
+
+
+//===============================================================
+// NVS_CHAVE_REGISTRO
+void NVS_Datalogger_Grava_Linha ( const char* Linha)
+{ // Grava uma linha de dados na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+  
+    //Escreve a linha na NVS
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+    } 
+    else 
+    {
+        ESP_LOGI(TAG_NVS, "Gravando linha na NVS: %s", Linha);                           //log the action
+        Erro = nvs_set_str(nvs_handle, NVS_CHAVE_REGISTRO, Linha);                 //write the setpoint to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");                       //log the action
+        Erro = nvs_commit(nvs_handle);                                           //commit the changes to the nvs
+        ESP_LOGI(TAG_NVS, "%s",(Erro != ESP_OK) ? "Failed!" : "Done");               //log the action
+        nvs_close(nvs_handle);                                                              //close the nvs handle    
+    }
+} 
+
+//===============================================================
+void NVS_Datalogger_Lista_Tudo( void)
+{ // Lista tudo da NVS_CHAVE_REGISTRO que está armazenado na NVS
+    esp_err_t    Erro;
+    nvs_handle_t nvs_handle;                                                                //create a handle to the nvs
+    char Linha[128];                                                                        // Cria uma chave para o registro
+    size_t required_size = sizeof(Linha);                                                   // Pega o tamanho do registro
+    //Lê o registro da NVS
+    Erro = nvs_open(NVS_NOME_PARTICAO, NVS_READWRITE, &nvs_handle);                                  //open the nvs partition
+    if (Erro != ESP_OK)                                                                      //check if the partition was opened successfully
+    {
+        //log the error
+        ESP_LOGE(TAG_NVS, "Error (%s) opening NVS handle!\n", esp_err_to_name(Erro));            //log the error
+        return;
+    } 
+    ESP_LOGI(TAG_NVS, "Lendo tudo da NVS_CHAVE_REGISTRO ... ");                                    //log the action         
+    Erro = nvs_get_str(nvs_handle, NVS_CHAVE_REGISTRO, Linha, &required_size);                    //read the setpoint from the nvs
+    switch (Erro)                                                                   
+    {
+        case ESP_OK:                                                                
+            ESP_LOGI(TAG_NVS, "Feito");                                            
+            ESP_LOGI(TAG_NVS, "Linha = %s", Linha);                                
+            break;
+        case ESP_ERR_NVS_NOT_FOUND:                                                 
+            ESP_LOGI(TAG_NVS, "A variavel 'NVS_CHAVE_REGISTRO' ainda não foi inicializada!" );         
+            break;
+        default :
+            ESP_LOGI(TAG_NVS, "Error (%s) reading!", esp_err_to_name(Erro));
+    }
+    nvs_close(nvs_handle);                                                              //close the nvs handle  
+                
+
 }
