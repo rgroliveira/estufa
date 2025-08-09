@@ -585,10 +585,10 @@ void app_main(void)
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
       
         if ( GModo_Gravacao == 1) // Se o modo de gravação estiver ativo
-        {  sprintf(GAuxs, "T= %d'C, U= %d%%, B= %d", 
+        {  sprintf(GAuxs, "[%ld] T= %d'C, U= %d%%, B= %d", xTaskGetTickCount(),
                          GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho);
             ESP_LOGI(TAG_VERSAO, "%s", GAuxs); // Loga os dados lidos
-**Continuar aqui            // NVS_Datalogger_Grava_Linha( Linha_Registro);
+            NVS_Datalogger_Grava_Linha( GAuxs);
         }
         vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
     }
