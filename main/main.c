@@ -42,7 +42,6 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #include "RMemoria_NVS.h" 
 
 
-
 //Pinos
 #define PINO_LDR                1   //Pino do LDR, GPIO 34 é um pino apenas de entrada
 #define PINO_BOTAO_ESC   2   //LAB01 GPIO2
@@ -94,7 +93,7 @@ int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;      // definido n
 uint8_t     GRele_Ativo = 0;            // Rele Ativo ou Inativo
 uint8_t     GRele_Estado_Anterior = 0;  // Usado para detectar transicao do relé
 
-char        GAuxs[40];                  //String auxiliar para formatar os dados (aumentado para evitar overflow)
+char        GAuxs[50];                  //String auxiliar para formatar os dados (aumentado para evitar overflow)
 SSD1306_t   GDisplay_OLED;              //Device do OLED SSD1306
 long        GInstante_Inicial = 0;      // Instante em que o sistema é iniciado para controle de tempo
 
@@ -546,9 +545,10 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
 //=============================================================================
 //=============================================================================
 void app_main(void)
-{
-    uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
+{   uint8_t Piscada = 0;             // Pisca no LCD para indicar que o sistema esta funcionando
     long Instante_Transicao_Rele;       // Instante da transição do relé       
+    uint8_t AuxC;
+
 
     ESTUFA_NVS_Inicializar();
     Display_OLED_Inicia( 1 );
@@ -585,11 +585,73 @@ void app_main(void)
         gpio_set_level(PINO_LED_F1, Piscada = !Piscada);
       
         if ( GModo_Gravacao == 1) // Se o modo de gravação estiver ativo
-        {  sprintf(GAuxs, "[%ld] T= %d'C, U= %d%%, B= %d", xTaskGetTickCount(),
+        {  sprintf(GAuxs, "[%ld ms] T= %d'C, U= %d%%, B= %d", xTaskGetTickCount(),
                          GRegistro1.Temperatura, GRegistro1.Umidade, GRegistro1.Brilho);
             ESP_LOGI(TAG_VERSAO, "%s", GAuxs); // Loga os dados lidos
             NVS_Datalogger_Grava_Linha( GAuxs);
         }
+
+        // Processa leitura pela porta serial de comando
+        AuxC = getchar();
+        if (AuxC > ' ')
+        { switch (AuxC)
+        {  case '+': // Incrementa o setpoint
+                        GSetPoint_Temperatura++;
+                        Termostato_Processa();
+                        ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o setpoint na NVS
+                        ESP_LOGI(TAG_VERSAO, "Setpoint incrementado para %d'C", GSetPoint_Temperatura);
+                        break;
+            case '-': // Decrementa o setpoint
+                        GSetPoint_Temperatura--;
+                        Termostato_Processa();
+                        ESTUFA_NVS_Setpoint_Grava( GSetPoint_Temperatura ); // Grava o setpoint na NVS
+                        ESP_LOGI(TAG_VERSAO, "Setpoint decrementado para %d'C", GSetPoint_Temperatura);
+                        break;
+            case 'a':
+            case 'A': // Modo automático
+                        GModo_Controle = MODO_AUTOMATICO;
+                        Termostato_Processa();
+                        ESTUFA_NVS_Controle_Grava( GModo_Controle );        // Grava o modo de controle na NVS
+                        ESP_LOGI(TAG_VERSAO, "Modo de controle alterado para automático");
+                        break;
+            case 'l':
+            case 'L': // Modo manual ligado
+                        GModo_Controle = MODO_MANUAL_LIGADO;
+                        Termostato_Processa();
+                        ESTUFA_NVS_Controle_Grava( GModo_Controle );        // Grava o modo de controle na NVS
+                        ESP_LOGI(TAG_VERSAO, "Modo de controle alterado para manual ligado");
+                        break;
+            case 'd':
+            case 'D': // Modo manual desligado
+                        GModo_Controle = MODO_MANUAL_DESLIGADO;
+                        Termostato_Processa();
+                        ESTUFA_NVS_Controle_Grava( GModo_Controle );        // Grava o modo de controle na NVS
+                        ESP_LOGI(TAG_VERSAO, "Modo de controle alterado para manual desligado");
+                        break;
+            case 'G': // Ativa gravação
+                        GModo_Gravacao = 1; // Ativa o modo de gravação
+                        ESP_LOGI(TAG_VERSAO, "Modo de gravação ativado");
+                        break;
+            case 'g': // Desativa gravação
+                        GModo_Gravacao = 0; // Desativa o modo de gravação
+                        ESP_LOGI(TAG_VERSAO, "Modo de gravação desativado");
+                        break;
+            case 'Z': // Apaga tudo da NVS
+                        ESP_LOGI(TAG_VERSAO, "Apagando todos valores armazenados na NVS");
+                        GModo_Gravacao = 0; // Desativa o modo de gravação
+                        NVS_Apaga_Tudo(); // Apaga tudo da NVS
+                        break;
+            case 'T': // Lista tudo da NVS
+                        GModo_Gravacao = 0; // Desativa o modo de gravação
+                        ESP_LOGI(TAG_VERSAO, "Listando todos valores armazenados na NVS");
+                        NVS_Lista_Entradas(); // Lista os valores armazenados na NVS
+                        ESP_LOGI(TAG_VERSAO, "Listando os valores armazenados");
+                        NVS_Datalogger_Lista_Tudo( );
+                        break;
+
+        } // Fim do switch
+        } // Fim do if AuxC > ' '
+
         vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
     }
 }
