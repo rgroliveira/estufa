@@ -1,0 +1,79 @@
+## Instrucoes
+1	Descrição do Projeto
+   O projeto consiste em criar um sistema embarcado para monitorar e controlar os parâmetros de uma estufa. O sistema utiliza sensores para medir temperatura, umidade e luminosidade, exibindo os valores em um display OLED. O usuário poderá ajustar o set point de temperatura por meio de um menu interativo no display. Além disso, será possível registrar os dados monitorados em um arquivo na memória do ESP32 e acessá-los posteriormente via comunicação serial.
+
+2 Requisitos do Projeto
+2.1 Monitoramento:
+    DHT11: Monitorar temperatura e umidade.
+    LDR: Monitorar a luminosidade da estufa.
+
+2.2 Controle e Exibição:
+    Display OLED: Exibir os valores de temperatura, umidade e luminosidade em tempo real.
+    Implementar um menu interativo para o ajuste do set point de temperatura e outras configurações.
+
+2.3 Configuração e Operação:
+   O usuário poderá ligar/desligar o sistema de controle manualmente.
+   Configurar o menuconfig para permitir ajustes de pré-compilação, como pinos dos sensores e parâmetros padrões, etc
+
+2.4 Registro de Dados:
+   Implementar o SPIFFS ou LittleFS para salvar os valores monitorados em um arquivo log.txt.
+   O usuário poderá habilitar/desabilitar o registro de dados via menu interativo.
+   Implementar um comando serial para leitura do arquivo de log, exibindo os dados salvos no terminal.
+
+3 Estrutura do Projeto:
+  O projeto deve ser organizado em bibliotecas (componentes) para modularidade e reutilização de código.
+
+Entrega
+O projeto deverá ser entregue em um repositório GitHub contendo:
+
+README.md:
+
+Descrição do projeto.
+Instruções para instalação, configuração e uso.
+Exemplos de funcionamento.
+Código Fonte:
+
+Organizado em componentes, com comentários explicativos para cada funcionalidade.
+Diagrama de Blocos do Hardware:
+
+Representação visual da interação entre sensores, display OLED e saídas de controle.
+Relatório Técnico:
+
+Explicação detalhada de como os conceitos do curso foram aplicados no projeto.
+Justificativa das escolhas técnicas feitas durante o desenvolvimento.
+Critérios de Avaliação
+Funcionalidade:
+
+Sistema deve atender aos requisitos especificados, incluindo monitoramento, controle, exibição de dados e registro de logs.
+Organização e Modularidade do Código:
+
+Uso de boas práticas de programação e estruturação em bibliotecas.
+Interface de Usuário:
+
+O menu no display OLED deve ser intuitivo e funcional.
+Integração de Recursos:
+
+Implementação correta de sensores, controle de dispositivos e armazenamento de dados.
+Documentação:
+
+Repositório completo, com README detalhado e relatório técnico bem elaborado.
+Recursos Necessários
+Hardware:
+
+Franzininho WiFi LAB01.
+Sensor DHT11.
+Sensor LDR.
+Display OLED.
+Resistores, LEDs e relé (se necessário).
+Software:
+
+Ambiente configurado com ESP-IDF.
+Ferramentas para comunicação serial (como minicom ou PuTTY).
+Biblioteca para controle do display OLED.
+Documentação de Referência:
+
+Datasheets do DHT11, LDR e Franzininho WiFi LAB01.
+Referências do ESP-IDF Component Registry.
+
+
+

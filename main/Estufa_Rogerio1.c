@@ -274,67 +274,44 @@ void Inicia_os_GPIO(void)
 { // Configura os pinos dos botões como entrada e interrupcao
 
     // LEDs
-    gpio_set_direction(PINO_LED_F1, GPIO_MODE_OUTPUT);              // Configura o pino do LED1 como saída
-    gpio_set_level(PINO_LED_F1, 0);                                 // Desliga o LED1 inicialmente
     // Rele
     gpio_set_direction(PINO_RELE, GPIO_MODE_OUTPUT);                // Configura o pino do relé como saída
     gpio_set_level(PINO_RELE, GRele_Ativo);   
     // buzzer
+    gpio_reset_pin(PINO_BUZZER);                                       // Reseta o pino do buzzer
     gpio_set_direction(PINO_BUZZER, GPIO_MODE_OUTPUT);              // Configura o pino do buzzer como saída
     gpio_set_level(PINO_BUZZER, 0);                                 // Desliga o buzzer inicialmente
 
-    //initializa botão incrementa
-    gpio_reset_pin(PINO_BOTAO_ESC);                          //select BUTTON_PIN as GPIO
-    gpio_set_direction(PINO_BOTAO_ESC, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_ESC);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_ESC);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_ESC, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+    // LEDs como saída
+    int LEDs[] = {PINO_LED_F1, PINO_LED_F2, PINO_LED_R, PINO_LED_G, PINO_LED_B};
+    for (int i = 0; i < sizeof(LEDs) / sizeof(LEDs[0]); i++)
+    {   gpio_reset_pin(LEDs[i]);
+        gpio_set_direction(LEDs[i], GPIO_MODE_OUTPUT);
+        gpio_set_level(LEDs[i], 0); // Inicializa os LEDs desligados
+    }
 
-    //Incicializa botão decrementa
-    gpio_reset_pin(PINO_BOTAO_OK);                          //select BUTTON_PIN2 as GPIO
-    gpio_set_direction(PINO_BOTAO_OK, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_OK);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_OK);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_OK, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
-
-     //Incicializa botão BOTAO_BAIXO
-    gpio_reset_pin(PINO_BOTAO_BAIXO);                          //select BUTTON_PIN2 as GPIO
-    gpio_set_direction(PINO_BOTAO_BAIXO, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_BAIXO);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_BAIXO);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_BAIXO, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
-
-    //Incicializa botão PINO_BOTAO_DIREITA
-    gpio_reset_pin(PINO_BOTAO_DIREITA);                          //select BUTTON_PIN2 as GPIO
-    gpio_set_direction(PINO_BOTAO_DIREITA, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_DIREITA);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_DIREITA);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_DIREITA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
-
-    //Incicializa botão PINO_BOTAO_ESQUERDA
-    gpio_reset_pin(PINO_BOTAO_ESQUERDA);                          //select BUTTON_PIN2 as GPIO
-    gpio_set_direction(PINO_BOTAO_ESQUERDA, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_ESQUERDA);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_ESQUERDA);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_ESQUERDA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
-
-    //Incicializa botão PINO_BOTAO_CIMA
-    gpio_reset_pin(PINO_BOTAO_CIMA);                          //select BUTTON_PIN2 as GPIO
-    gpio_set_direction(PINO_BOTAO_CIMA, GPIO_MODE_INPUT);     //set as input
-    gpio_pullup_en(PINO_BOTAO_CIMA);                          //enable pull-up
-    gpio_pulldown_dis(PINO_BOTAO_CIMA);                       //disable pull-down
-    gpio_set_intr_type(PINO_BOTAO_CIMA, GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+    // inicializa os botoes
+    int Botoes[] = {PINO_BOTAO_ESC, PINO_BOTAO_OK, PINO_BOTAO_BAIXO, 
+                    PINO_BOTAO_DIREITA, PINO_BOTAO_ESQUERDA, PINO_BOTAO_CIMA};
+    for (int i = 0; i < sizeof(Botoes)/sizeof(Botoes[0]); i++) 
+    {
+        gpio_reset_pin    (Botoes[i]);                      //select BUTTON_PIN as GPIO
+        gpio_set_direction(Botoes[i], GPIO_MODE_INPUT);     //set as input
+        gpio_pullup_en    (Botoes[i]);                      //enable pull-up
+        gpio_pulldown_dis (Botoes[i]);                      //disable pull-down
+        gpio_set_intr_type(Botoes[i], GPIO_INTR_NEGEDGE);   //interrupt on negative edge
+    };
 
     gpio_evt_queue  = xQueueCreate(1, sizeof(uint32_t));            //create queue to handle gpio event from ISR
     xTaskCreate(buttonTask, "buttonTask", 2048, NULL, 2, NULL);     //create button task
 
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);                  //install interrupt service routine
-    gpio_isr_handler_add(PINO_BOTAO_ESC, gpio_isr_handler, (void*)PINO_BOTAO_ESC); //add ISR handler for button1
-    gpio_isr_handler_add(PINO_BOTAO_OK, gpio_isr_handler, (void*)PINO_BOTAO_OK); //add ISR handler for button2
-    gpio_isr_handler_add(PINO_BOTAO_BAIXO, gpio_isr_handler,    (void*)PINO_BOTAO_BAIXO); 
-    gpio_isr_handler_add(PINO_BOTAO_DIREITA, gpio_isr_handler,  (void*)PINO_BOTAO_DIREITA); 
-    gpio_isr_handler_add(PINO_BOTAO_ESQUERDA, gpio_isr_handler, (void*)PINO_BOTAO_ESQUERDA); 
-    gpio_isr_handler_add(PINO_BOTAO_CIMA, gpio_isr_handler,     (void*)PINO_BOTAO_CIMA); 
+    gpio_isr_handler_add(PINO_BOTAO_ESC,        gpio_isr_handler, (void*)PINO_BOTAO_ESC); //add ISR handler for button1
+    gpio_isr_handler_add(PINO_BOTAO_OK,         gpio_isr_handler, (void*)PINO_BOTAO_OK); //add ISR handler for button2
+    gpio_isr_handler_add(PINO_BOTAO_BAIXO,      gpio_isr_handler, (void*)PINO_BOTAO_BAIXO); 
+    gpio_isr_handler_add(PINO_BOTAO_DIREITA,    gpio_isr_handler, (void*)PINO_BOTAO_DIREITA); 
+    gpio_isr_handler_add(PINO_BOTAO_ESQUERDA,   gpio_isr_handler, (void*)PINO_BOTAO_ESQUERDA); 
+    gpio_isr_handler_add(PINO_BOTAO_CIMA,       gpio_isr_handler, (void*)PINO_BOTAO_CIMA); 
 
 }
 
