@@ -34,36 +34,37 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
  Telas do Menu:
 
 ```
-├─ 1 Principal
-├     Estufa <versão>
-├     Rogerio IFCE
-├     Temperat. = 
-├     Umidade   = 
-├     Brilho    = 
-├     00/00/0000 00:00
-├     Set point = 
-├     Rele: Desligado
-|
-├─ 2  ===SETPOINT==="
-├     +: Incrementa  "
-├     -: Decrementa  "
-├     Set Point = xx °C
-|
-├─ 3  ===CONTROLE====
-├     A: Automatico  
-├     L: Ligado      
-├     D: Desligado   
-├   
-├     <OK> Para salvar
-|
-├─ 4  ====ARQUIVO===="
-├     T: lista Tudo  "
-├     Z: Apaga tudo  "
-├     G: Ativa Gravac"
-├     g: Para Gravaca"
-├ 
-├     <Gravando>
-
+┌─────────────────────┐
+├─ 1 Principal        |
+├     Estufa <versão> |
+├     Rogerio IFCE    |
+├     Temperat. =     |
+├     Umidade   =     |
+├     Brilho    =     |
+├                     |
+├     Set point =     |
+├     Rele: Desligado |
+├─────────────────────┤
+├─ 2  ===SETPOINT===  |
+├     +: Incrementa   |
+├     -: Decrementa   |
+├     Set Point = xx°C|
+├─────────────────────┤
+├─ 3  ===CONTROLE==== |
+├     A: Automatico   |
+├     L: Ligado       |
+├     D: Desligado    |
+├                     |
+├     <OK> Para salvar|
+├─────────────────────┤
+├─ 4  ====ARQUIVO==== |
+├     T: lista Tudo   |
+├     Z: Apaga tudo   |
+├     G: Ativa Gravac |
+├     g: Para Gravaca |
+├                     |
+├     <Gravando>      |
+└─────────────────────┘
 ```
 ## Comando pela UART
 O usuário pode interagir pelo sistema através da comunicação serial UART a 115200 bps, os comandos são os mesmos acessados pela interfafece teclado e display, através dos caracteres '+','-','a','A','l','L','d','D','g','G','Z' e 'T'.
