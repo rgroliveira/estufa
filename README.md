@@ -9,7 +9,7 @@ valores medidos são apresentados em tempo real num display OLED.
 
 Um rele é acionado, pino GPIO 14 ou LED vermelho no LAB01, quando a temperatura 
 lida no sensor é menor que o valor do Setpoint. Também esta indicação é 
-apresentada no disply na tela principal.
+apresentada no display na tela principal.
 
 São três modos de controle da saída: 
   Automático, 
