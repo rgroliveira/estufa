@@ -1,7 +1,10 @@
 Autor: Rogerio da Silva Oliveira
+
 ifce.edu.br
 # Estufa Ditatica 1.0
-Projeto submetido ao curso de Sistemas embarcados como atividade final.
+
+Projeto submetido ao curso de “Firmware - Programação de Sistemas Embarcados” do Embarcados.com.br como atividade final
+
 
 ## Descrição
 O sistema monitora a temperatura, umidade e luminosidade de uma estufa através 
@@ -13,9 +16,13 @@ lida no sensor é menor que o valor do Setpoint. Também esta indicação é
 apresentada no display na tela principal.
 
 São três modos de controle da saída: 
-  Automático, 
-  Sempre ligado,
-  Sempre desligado.
+
+  - Automático, 
+
+  - Sempre ligado,
+
+  - Sempre desligado.
+
 
 Os parâmetros do Setpoint e Modo de controle sempre tem uma cópia gravada na 
 memória NVS, para  manter a integridade numa falha de energia ou reset. 
@@ -64,8 +71,11 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 ## Estrutura do Menu
 
  Teclas de Navegação: Cima (BT1), Baixo (BT4), Esquerda (BT2) e Direita (BT3)
+
  Tecla de comando: OK (BT5) e ESC (BT6)
+
  Tecla de Controle do Setpoint, dentro do menu setpoint '+' (BT6) e '-' (BT5)
+
 
  Telas do Menu:
 
