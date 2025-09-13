@@ -108,9 +108,11 @@ O usuário pode interagir pelo sistema através da comunicação serial UART a 1
 a configuração da memória é:
 
 # ESP-IDF Partition Table
-# Name, Type, SubType, Offset, Size, Flags
-nvs,        data, nvs,      0x9000,  0x6000,
-phy_init,   data, phy,      0xf000,  0x1000,
-factory,    app,  factory,  0x10000, 1M,
-littlefs,data,spiffs,,256K,,
+```
+Name     , Type , SubType , Offset  , Size   , Flags
+nvs      , data , nvs     , 0x9000  , 0x6000 ,
+phy_init , data , phy     , 0xf000  , 0x1000 ,
+factory  , app  , factory , 0x10000 , 1M     ,
+littlefs , data , spiffs  ,         , 256K   ,
 
+```
