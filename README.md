@@ -107,7 +107,7 @@ O usuário pode interagir pelo sistema através da comunicação serial UART a 1
 ## Partição de memória
 a configuração da memória é:
 
-# ESP-IDF Partition Table
+ESP-IDF Partition Table
 ```
 Name     , Type , SubType , Offset  , Size   , Flags
 nvs      , data , nvs     , 0x9000  , 0x6000 ,
