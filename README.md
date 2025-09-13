@@ -24,10 +24,45 @@ Os valores e parâmentros do sistema podem ser monitorados pela porta serial.
 
 O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 
+## Diagrama de blocos
+```
+          ┌──────────────────────────┐
+          │      Sensores de Entrada │
+          │ ───────────────────────  │
+          │  • DHT11 (Temperatura)   │
+          │  • DHT11 (Umidade)       │
+          │  • Sensor LED (Luz)      │
+          └──────────┬───────────────┘
+                     │
+             ┌───────▼────────┐
+             │   ESP32-S2     │
+             │ ─────────────  │
+             │  • Processador │
+             │  • NVS interna │◄── Registro de dados em arquivo texto
+             │                │
+             └───────┬────────┘
+                     │
+                     │
+   ┌──────────┬──────▼─────┬────────────────┐
+   │          │            │                │
+   │          │            │                │
+┌──▼───┐   ┌──▼────┐   ┌───▼────┐  ┌────────▼──────┐
+│Botões│   │  OLED │   │ Serial │  │      Saída    │
+│  ↑   │   │       │   │        │  │               │
+│  ↓   │   │SSD1306│   │USB/UART│  │ Relé → Resist.│
+│  ←   │   │       │   │        │  │   da Estufa   │
+│  →   │   │       │   │        │  │               │
+│ OK   │   │       │   │        │  │               │
+│ ESC  │   │       │   │        │  │               │
+└──────┘   └───────┘   └────────┘  └───────────────┘
+  │            │           │
+  └── Comunicação usuário──┘
+
+```
 
 ## Estrutura do Menu
 
- Teclas de Navegação: Cima (BT1), Baixo (BT4), Esquerda (BT2) e Direira (BT3)
+ Teclas de Navegação: Cima (BT1), Baixo (BT4), Esquerda (BT2) e Direita (BT3)
  Tecla de comando: OK (BT5) e ESC (BT6)
  Tecla de Controle do Setpoint, dentro do menu setpoint '+' (BT6) e '-' (BT5)
 
@@ -69,4 +104,13 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 ## Comando pela UART
 O usuário pode interagir pelo sistema através da comunicação serial UART a 115200 bps, os comandos são os mesmos acessados pela interfafece teclado e display, através dos caracteres '+','-','a','A','l','L','d','D','g','G','Z' e 'T'.
 
+## Partição de memória
+a configuração da memória é:
+
+# ESP-IDF Partition Table
+# Name, Type, SubType, Offset, Size, Flags
+nvs,        data, nvs,      0x9000,  0x6000,
+phy_init,   data, phy,      0xf000,  0x1000,
+factory,    app,  factory,  0x10000, 1M,
+littlefs,data,spiffs,,256K,,
 

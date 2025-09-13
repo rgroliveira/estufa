@@ -25,6 +25,7 @@ const char *TAG_NVS = "Memoria NVS";                                            
 char ssid[32];                                                               //variable to store the ssid
 char GSenha[32];                                                          //variable to store the password
 
+
 //===============================================================
 void ESTUFA_NVS_Inicializar(void)
 { // Initializa a memória NVS

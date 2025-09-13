@@ -104,9 +104,19 @@ int8_t GModo_Gravacao = 0;     // Modo de gravação de arquivo, habilitado ou n
 //    { 0, 0, 2, 0 }  // Linha 2 - Opções do menu
 //};
 
-// Funcoes
-void Tela_OLED_Escreve( );
-void Processa_Botoes_Teclado( uint8_t Botao_Pressionado );
+// Protótipo das funcoes deste arquivo
+void Tela_OLED_Escreve(void);
+void Processa_Botoes_Teclado(uint8_t Botao_Pressionado);
+void Display_OLED_Inicia(int TEspera);
+void LDR_ADC_Inicia(void);
+void LDR_ADC_Ler(int16_t *Tensao_Lida);
+uint8_t DHT11_Leitura(void);
+void Termostato_Processa(void);
+void buttonTask(void *pvpameters);
+void Inicia_os_GPIO(void);
+void RTC_DS3231_Leitura(void);
+void RTC_DS3231_Mostra_Hora(uint8_t Linha_Display);
+void app_main(void);
 
 //=============================================================================
 void Display_OLED_Inicia( int TEspera)
@@ -223,7 +233,7 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
     xQueueSendFromISR(gpio_evt_queue , &Numero_Pino, NULL); //send the GPIO number to the queue
 }
 
-//button task
+//=============================================================================
 void buttonTask(void *pvpameters)
 {
   uint32_t Numero_Pino;                     // Numero da GPIO
