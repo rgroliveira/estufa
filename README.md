@@ -1,4 +1,5 @@
-Rogerio ifce.edu.br
+Autor: Rogerio da Silva Oliveira
+ifce.edu.br
 # Estufa Ditatica 1.0
 Projeto submetido ao curso de Sistemas embarcados como atividade final.
 
