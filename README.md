@@ -102,7 +102,20 @@ O registro de dados está num arquivo texto na memória NVS interna ao ESP32
 └─────────────────────┘
 ```
 ## Comando pela UART
-O usuário pode interagir pelo sistema através da comunicação serial UART a 115200 bps, os comandos são os mesmos acessados pela interfafece teclado e display, através dos caracteres '+','-','a','A','l','L','d','D','g','G','Z' e 'T'.
+O usuário pode interagir pelo sistema através da comunicação serial UART a 115200 bps, os comandos são os mesmos acessados pela interfafece teclado e display, através dos caracteres:
+'+' --> Incrementa o setpoint
+'-' --> Decrementa o setpoint
+'a' --> Relé no modo automático
+'A' --> Relé no modo automático
+'l' --> Relé sempre ligado
+'L' --> Relé sempre ligado
+'d' --> Relé sempre desligado
+'D' --> Relé sempre desligado
+'g' --> Para a gravação na memória
+'G' --> Ativa a gravação na memória
+'Z' --> Apaga todos os registros
+'T' --> Lista todos os dados
+
 
 ## Partição de memória
 a configuração da memória é:

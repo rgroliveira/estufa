@@ -41,6 +41,7 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #include "ssd1306.h"  // Biblioteca SSD1306 para OLED
 #include "RMemoria_NVS.h" 
 #include "Pinos_Franzininho_LAB01.h"
+#include "RMenus.h"
 
 //DHT11 configuration
 static const dht_sensor_type_t DHT11_TIPO = DHT_TYPE_DHT11;
@@ -49,7 +50,8 @@ static const dht_sensor_type_t DHT11_TIPO = DHT_TYPE_DHT11;
 static const char *TAG_ADC_LDR = "ADC1_0 LDR";
 
 // ADC
-adc_oneshot_unit_handle_t G_ADC1_Handle;                              //ADC1 Handle
+adc_oneshot_unit_handle_t Handle_ADC1;                     // Manipulador do ADC1
+static QueueHandle_t Handle_Eventos_gpio = NULL;           // Manipulador da fila de interrupcao do GPIO
 
 typedef struct {
     int16_t Temperatura;    //Temperatura °C
@@ -66,8 +68,8 @@ typedef struct {
 Tipo_Registro GRegistro1;
 
 int8_t      GSetPoint_Temperatura   = CONFIG_ESTUFA_SETPOINT_DEFAULT; // definido no menuconfig
-int16_t     GTemperatura_Max        = CONFIG_ESTUFA_MAX_TEMP;      // definido no menuconfig
-int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;      // definido no menuconfig
+int16_t     GTemperatura_Max        = CONFIG_ESTUFA_MAX_TEMP;         // definido no menuconfig
+int16_t     GTemperatura_Min        = CONFIG_ESTUFA_MIN_TEMP;         // definido no menuconfig
 uint8_t     GRele_Ativo = 0;            // Rele Ativo ou Inativo
 uint8_t     GRele_Estado_Anterior = 0;  // Usado para detectar transicao do relé
 
@@ -85,7 +87,7 @@ enum Tipo_Menu_Telas {
         MENU_TELA_SETPOINT,      // Tela de setpoint
         MENU_TELA_CONTROLE,      // Tela de controle
         MENU_TELA_ARQUIVO        // Tela de arquivo
-} GMenu_Tela_Atual;          // Variável global para armazenar a tela atual do menu
+} GMenu_Tela_Atual;              // Variável global para armazenar a tela atual do menu
 
 enum Tipo_Modo_Controle {
         MODO_AUTOMATICO = 0, // Controle automático
@@ -98,12 +100,6 @@ int8_t GMenu_Coluna_Atual = 0; // Coluna atual do menu
 int8_t GMenu_Linha_Atual = 0;  // Sub-menu atual, usado para telas com sub-menus
 int8_t GModo_Gravacao = 0;     // Modo de gravação de arquivo, habilitado ou não
 
-//int8_t GMatriz_Menu [MAX_MENUS_LINHAS][MAX_MENU_TELAS] = {
-//    { 1, 2, 3, 4 }, // Linha 0 - Opções do menu
-//    { 0, 1, 1, 1 }, // Linha 1 - Opções do menu
-//    { 0, 0, 2, 0 }  // Linha 2 - Opções do menu
-//};
-
 // Protótipo das funcoes deste arquivo
 void Tela_OLED_Escreve(void);
 void Processa_Botoes_Teclado(uint8_t Botao_Pressionado);
@@ -112,7 +108,7 @@ void LDR_ADC_Inicia(void);
 void LDR_ADC_Ler(int16_t *Tensao_Lida);
 uint8_t DHT11_Leitura(void);
 void Termostato_Processa(void);
-void buttonTask(void *pvpameters);
+void Tarefa_Botao(void *pvpameters);
 void Inicia_os_GPIO(void);
 void RTC_DS3231_Leitura(void);
 void RTC_DS3231_Mostra_Hora(uint8_t Linha_Display);
@@ -153,17 +149,14 @@ void LDR_ADC_Inicia(void)
     adc_oneshot_unit_init_cfg_t G_ADC1_Config = {                        //ADC1 Config
         .unit_id = ADC_UNIT_1,                                          //ADC1
     };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&G_ADC1_Config, &G_ADC1_Handle)); //ADC1 Init
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&G_ADC1_Config, &Handle_ADC1)); //ADC1 Init
 
 //---------- Configura o ADC ----------------------
     adc_oneshot_chan_cfg_t config = {                                                       //ADC1 Channel Config
         .bitwidth = ADC_BITWIDTH_DEFAULT,                                                   //ADC1 Bitwidth (Default)
         .atten = ADC_ATTEN_DB_12,                                                           //ADC1 Attenuation 
     };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(G_ADC1_Handle, ADC_CHANNEL_0, &config));       
-    
-// Leitura do ADC
- 
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(Handle_ADC1, ADC_CHANNEL_0, &config));       
 }
  
 //=============================================================================
@@ -171,7 +164,7 @@ void LDR_ADC_Ler( int16_t *Tensao_Lida)
 {//Le o LDR pelo ADC, retorna a tensao lida em mV
      static int Valor_Bruto;     //ADC Raw Data
 
-    ESP_ERROR_CHECK(adc_oneshot_read(G_ADC1_Handle, ADC_CHANNEL_0, &Valor_Bruto));                        //ADC1 Read
+    ESP_ERROR_CHECK(adc_oneshot_read(Handle_ADC1, ADC_CHANNEL_0, &Valor_Bruto));                        //ADC1 Read
     *Tensao_Lida = (Valor_Bruto * 2500)/8192;                                                                //Calculate Voltage
     ESP_LOGV (TAG_ADC_LDR, "ADC%d Channel[%d] Dado bruto: %d, Tensao: %d mV", ADC_UNIT_1 + 1, ADC_CHANNEL_0, Valor_Bruto, *Tensao_Lida);      //Print Voltage
 
@@ -197,7 +190,6 @@ uint8_t DHT11_Leitura(void)
     }
 }
 
-
 //=============================================================================
 void Termostato_Processa( void )
 // Processa o rele de acordo com a temperatura lida, e escreve no display OLED
@@ -222,28 +214,24 @@ void Termostato_Processa( void )
   gpio_set_level(PINO_RELE, GRele_Ativo);   
 }
 
-//=============================================================================
-//manipulador da fila de interrupcao do GPIO
-static QueueHandle_t gpio_evt_queue = NULL;                 //queue to handle gpio events
-
-//ISR handler
+//============== ISR handler ====================================================
 static void IRAM_ATTR gpio_isr_handler(void* arg)   
 {
-    uint32_t Numero_Pino = (uint32_t) arg;                    //get the GPIO number
-    xQueueSendFromISR(gpio_evt_queue , &Numero_Pino, NULL); //send the GPIO number to the queue
+    uint32_t Numero_Pino = (uint32_t) arg;                      //get the GPIO number
+    xQueueSendFromISR(Handle_Eventos_gpio , &Numero_Pino, NULL);     //send the GPIO number to the queue
 }
 
 //=============================================================================
-void buttonTask(void *pvpameters)
+void Tarefa_Botao(void *pvpameters)
 {
-  uint32_t Numero_Pino;                     // Numero da GPIO
-  TickType_t Tempo_Botao_Pressionado = 0;   // Armazena o instante em que o botao e pressionado   
+  uint32_t Numero_Pino;                                         // Numero da GPIO
+  TickType_t Tempo_Botao_Pressionado = 0;                       // Armazena o instante em que o botao e pressionado   
 
   while (true) 
   {
-    xQueueReceive(gpio_evt_queue, &Numero_Pino, portMAX_DELAY); // Espera por eventos de interrupção de GPIO
-    ESP_LOGV(TAG_VERSAO, "Botao GPIO[%li]", Numero_Pino);        // Log the GPIO number that triggered the interrupt
-    TickType_t GInstante_Inicial = xTaskGetTickCount();               // Pega o tempo atual da tarefa
+    xQueueReceive(Handle_Eventos_gpio, &Numero_Pino, portMAX_DELAY); // Espera por eventos de interrupção de GPIO
+    ESP_LOGV(TAG_VERSAO, "Botao GPIO[%li]", Numero_Pino);       // log do botao pressionado
+    TickType_t GInstante_Inicial = xTaskGetTickCount();         // Pega o tempo atual da tarefa
 
     
 
@@ -255,7 +243,6 @@ void buttonTask(void *pvpameters)
     }
   }
 }
-
 
 //=============================================================================
 void Inicia_os_GPIO(void)
@@ -290,8 +277,8 @@ void Inicia_os_GPIO(void)
         gpio_set_intr_type(Botoes[i], GPIO_INTR_NEGEDGE);   //interrupt on negative edge
     };
 
-    gpio_evt_queue  = xQueueCreate(1, sizeof(uint32_t));            //create queue to handle gpio event from ISR
-    xTaskCreate(buttonTask, "buttonTask", 2048, NULL, 2, NULL);     //create button task
+    Handle_Eventos_gpio  = xQueueCreate(1, sizeof(uint32_t));            //create queue to handle gpio event from ISR
+    xTaskCreate(Tarefa_Botao, "Tarefa_Botao", 2048, NULL, 2, NULL);     //create button task
 
     gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);                  //install interrupt service routine
     gpio_isr_handler_add(PINO_BOTAO_ESC,        gpio_isr_handler, (void*)PINO_BOTAO_ESC); //add ISR handler for button1
@@ -308,6 +295,7 @@ void RTC_DS3231_Leitura(void)
 { // Leitura do RTC DS3231
   // Esta função deve ser implementada se o RTC for utilizado
   // No momento, não há implementação para o RTC
+// Houve conflito com a biblioteca do display OLED
 //  ESP_LOGW(TAG_VERSAO, "RTC DS3231 não implementado");
   
     GRegistro1.Dia = 0;          // Dia
@@ -500,11 +488,7 @@ void Processa_Botoes_Teclado( uint8_t Botao_Pressionado )
             GMenu_Tela_Atual  = 0;
         };
     }
-
-
-
 }
-
 
 //=============================================================================
 //=============================================================================
