@@ -44,13 +44,11 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #include "RMenus.h"
 
 #include "Componente_Rele.h"
+#include "Componente_LAB01_Sensores.h"
 
 
 #define TEMPO_ENTRE_LEITURAS  5000  // Tempo entre leituras dos sensores em ms
 #define PINO_RELE    PINO_LED_R     // Define o pino do relé no LED Vermelho (GPIO 14) no LAB01
-
-//DHT11 configuration
-static const dht_sensor_type_t DHT11_TIPO = DHT_TYPE_DHT11;
 
 //TAG para o log
 static const char *TAG_ADC_LDR = "ADC1_0 LDR";
@@ -114,7 +112,6 @@ void Processa_Botoes_Teclado(uint8_t Botao_Pressionado);
 void Display_OLED_Inicia(int TEspera);
 void LDR_ADC_Inicia(void);
 void LDR_ADC_Ler(int16_t *Tensao_Lida);
-uint8_t DHT11_Leitura(void);
 void Termostato_Processa(void);
 void Tarefa_Botao(void *pvpameters);
 void Inicia_os_GPIO(void);
@@ -176,26 +173,6 @@ void LDR_ADC_Ler( int16_t *Tensao_Lida)
     *Tensao_Lida = (Valor_Bruto * 2500)/8192;                                                                //Calculate Voltage
     ESP_LOGV (TAG_ADC_LDR, "ADC%d Channel[%d] Dado bruto: %d, Tensao: %d mV", ADC_UNIT_1 + 1, ADC_CHANNEL_0, Valor_Bruto, *Tensao_Lida);      //Print Voltage
 
-}
-
-//=============================================================================
-uint8_t DHT11_Leitura(void)
-{ int16_t Temperatura10 = 0;       //Temperatura * 10
-  int16_t Umidade10 = 0;           //Umidade * 10
- 
-  if(dht_read_data(DHT11_TIPO, PINO_DHT11, &Umidade10,&Temperatura10)==ESP_OK)      //read the data from the sensor
-    {
-        GRegistro1.Temperatura = Temperatura10/10;    //store the temperature data
-        GRegistro1.Umidade = Umidade10/10;            //store the humidity data
-        return(1);
-    }
-    else
-    {
-        ESP_LOGE(TAG_VERSAO, "Nao pude ler dados do sensor DHT11");
-        GRegistro1.Temperatura = 0;
-        GRegistro1.Umidade = 0;   
-        return(0);
-    }
 }
 
 //=============================================================================
@@ -526,7 +503,9 @@ void app_main(void)
 
     while(1)
     {   LDR_ADC_Ler( &GRegistro1.Brilho );          //read the LDR data
-        DHT11_Leitura();
+        LAB01_DHT11_Leitura( PINO_DHT11,  &GRegistro1.Temperatura, &GRegistro1.Umidade); // Le o DHT11
+
+        vTaskDelay(pdMS_TO_TICKS(TEMPO_ENTRE_LEITURAS));
         RTC_DS3231_Leitura();  
         Tela_OLED_Escreve();
         Termostato_Processa( );                               // Processa o rele de acordo com a temperatura lida
