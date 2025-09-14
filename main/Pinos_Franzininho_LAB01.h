@@ -14,7 +14,6 @@
 #define PINO_LED_B              12   //LAB01 LED Azul
 #define PINO_LED_G              13   //LAB01 LED Verde
 #define PINO_LED_R              14   //LAB01 LED Vermelho
-#define PINO_RELE               14   //Pino do relé, GPIO 14 ( no LAB01 é o LED vermelho
 #define PINO_DHT11              15
 #define PINO_BUZZER             17   //LAB01 Buzzer
 #define PINO_LED_F1             21   //LED Franzininho

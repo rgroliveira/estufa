@@ -43,6 +43,12 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #include "Pinos_Franzininho_LAB01.h"
 #include "RMenus.h"
 
+#include "Componente_Rele.h"
+
+
+#define TEMPO_ENTRE_LEITURAS  5000  // Tempo entre leituras dos sensores em ms
+#define PINO_RELE    PINO_LED_R     // Define o pino do relé no LED Vermelho (GPIO 14) no LAB01
+
 //DHT11 configuration
 static const dht_sensor_type_t DHT11_TIPO = DHT_TYPE_DHT11;
 
@@ -99,6 +105,8 @@ int8_t GModo_Controle;         // Variável global para armazenar o modo de cont
 int8_t GMenu_Coluna_Atual = 0; // Coluna atual do menu
 int8_t GMenu_Linha_Atual = 0;  // Sub-menu atual, usado para telas com sub-menus
 int8_t GModo_Gravacao = 0;     // Modo de gravação de arquivo, habilitado ou não
+Tipo_Rele GRele_EStufa;        // Componente relé para controle da estufa
+
 
 // Protótipo das funcoes deste arquivo
 void Tela_OLED_Escreve(void);
@@ -211,7 +219,7 @@ void Termostato_Processa( void )
                                     break;      
     }   
     
-  gpio_set_level(PINO_RELE, GRele_Ativo);   
+  Rele_Define_Estado(&GRele_EStufa, GRele_Ativo); // Atualiza o estado do relé
 }
 
 //============== ISR handler ====================================================
@@ -248,10 +256,11 @@ void Tarefa_Botao(void *pvpameters)
 void Inicia_os_GPIO(void)
 { // Configura os pinos dos botões como entrada e interrupcao
 
-    // LEDs
     // Rele
-    gpio_set_direction(PINO_RELE, GPIO_MODE_OUTPUT);                // Configura o pino do relé como saída
-    gpio_set_level(PINO_RELE, GRele_Ativo);   
+    Rele_Inicia(&GRele_EStufa, PINO_RELE);  // Inicia o componente relé
+    GRele_Ativo = 0;                        // Rele inativo
+    Rele_Define_Estado(&GRele_EStufa, GRele_Ativo); // Define o estado inicial do relé
+    
     // buzzer
     gpio_reset_pin(PINO_BUZZER);                                       // Reseta o pino do buzzer
     gpio_set_direction(PINO_BUZZER, GPIO_MODE_OUTPUT);              // Configura o pino do buzzer como saída
@@ -601,6 +610,6 @@ void app_main(void)
         } // Fim do switch
         } // Fim do if AuxC > ' '
 
-        vTaskDelay(pdMS_TO_TICKS(5000));                                        //delay             
+        vTaskDelay(pdMS_TO_TICKS(TEMPO_ENTRE_LEITURAS));                                        //delay             
     }
 }
