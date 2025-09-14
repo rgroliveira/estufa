@@ -12,6 +12,7 @@
   },
   "idf.flashType": "UART",
   "files.associations": {
-    "dht.h": "c"
+    "dht.h": "c",
+    "componente_lab01_sensores.h": "c"
   }
 }

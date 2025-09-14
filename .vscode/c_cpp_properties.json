@@ -7,14 +7,16 @@
                 "${config:idf.buildPath}/compile_commands.json"
             ],
             "includePath": [
-                "${config:idf.espIdfPath}/components/**",
+                // "${config:idf.espIdfPath}/components/**",
+                "C:/Espressif/frameworks/esp-idf-v5.4.1/components/**",
                 "${config:idf.espIdfPathWin}/components/**",
                 "${workspaceFolder}/**",
                 "C:/Espressif/frameworks/esp-idf-v5.4.1/components/esp_adc/include/esp_adc"
             ],
             "browse": {
                 "path": [
-                    "${config:idf.espIdfPath}/components",
+                    // "${config:idf.espIdfPath}/components",
+                    "C:/Espressif/frameworks/esp-idf-v5.4.1/components/**",
                     "${config:idf.espIdfPathWin}/components",
                     "${workspaceFolder}"
                 ],
