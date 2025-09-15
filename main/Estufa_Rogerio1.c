@@ -32,12 +32,13 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include <driver/gpio.h>
 
-#include "esp_adc/adc_oneshot.h" // Includes para ADC do LDR
-#include "esp_adc/adc_cali.h"
-#include "esp_adc/adc_cali_scheme.h"
+// #include "esp_adc/adc_oneshot.h" // Includes para ADC do LDR
+// #include "esp_adc/adc_cali.h"
+// #include "esp_adc/adc_cali_scheme.h"
+// #include "dht.h"      // Biblioteca DHT para DHT11
 
-#include "dht.h"      // Biblioteca DHT para DHT11
 #include "ssd1306.h"  // Biblioteca SSD1306 para OLED
 #include "RMemoria_NVS.h" 
 #include "Pinos_Franzininho_LAB01.h"
@@ -50,11 +51,6 @@ static const char *TAG_VERSAO = "Estufa r1.01";
 #define TEMPO_ENTRE_LEITURAS  5000  // Tempo entre leituras dos sensores em ms
 #define PINO_RELE    PINO_LED_R     // Define o pino do relé no LED Vermelho (GPIO 14) no LAB01
 
-//TAG para o log
-static const char *TAG_ADC_LDR = "ADC1_0 LDR";
-
-// ADC
-adc_oneshot_unit_handle_t Handle_ADC1;                     // Manipulador do ADC1
 static QueueHandle_t Handle_Eventos_gpio = NULL;           // Manipulador da fila de interrupcao do GPIO
 
 typedef struct {
@@ -144,35 +140,6 @@ void Display_OLED_Inicia( int TEspera)
 
     ssd1306_clear_screen(&GDisplay_OLED,false);                  //clear the OLED  
     ssd1306_contrast(&GDisplay_OLED,0xFF);                       //set the contrast
-}
-
-
-//=============================================================================
-void LDR_ADC_Inicia(void)
-{
-    //inicializa o LDR ADC
-    adc_oneshot_unit_init_cfg_t G_ADC1_Config = {                        //ADC1 Config
-        .unit_id = ADC_UNIT_1,                                          //ADC1
-    };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&G_ADC1_Config, &Handle_ADC1)); //ADC1 Init
-
-//---------- Configura o ADC ----------------------
-    adc_oneshot_chan_cfg_t config = {                                                       //ADC1 Channel Config
-        .bitwidth = ADC_BITWIDTH_DEFAULT,                                                   //ADC1 Bitwidth (Default)
-        .atten = ADC_ATTEN_DB_12,                                                           //ADC1 Attenuation 
-    };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(Handle_ADC1, ADC_CHANNEL_0, &config));       
-}
- 
-//=============================================================================
-void LDR_ADC_Ler( int16_t *Tensao_Lida)
-{//Le o LDR pelo ADC, retorna a tensao lida em mV
-     static int Valor_Bruto;     //ADC Raw Data
-
-    ESP_ERROR_CHECK(adc_oneshot_read(Handle_ADC1, ADC_CHANNEL_0, &Valor_Bruto));                        //ADC1 Read
-    *Tensao_Lida = (Valor_Bruto * 2500)/8192;                                                                //Calculate Voltage
-    ESP_LOGV (TAG_ADC_LDR, "ADC%d Channel[%d] Dado bruto: %d, Tensao: %d mV", ADC_UNIT_1 + 1, ADC_CHANNEL_0, Valor_Bruto, *Tensao_Lida);      //Print Voltage
-
 }
 
 //=============================================================================
@@ -489,7 +456,7 @@ void app_main(void)
     Display_OLED_Inicia( 1 );
 //NVS_Apaga_Tudo( );
     NVS_Lista_Entradas( );
-    LDR_ADC_Inicia();
+    LAB01_LDR_Inicializa();
     Inicia_os_GPIO();                                   // Inicia as entradas e saídas do GPIO
     ESTUFA_NVS_Setpoint_Le( &GSetPoint_Temperatura );   // Le o setpoint da NVS
     ESTUFA_NVS_Controle_Le( &GModo_Controle );          // Le o modo de controle da NVS
@@ -502,10 +469,8 @@ void app_main(void)
     ESP_LOGI(TAG_VERSAO, "Instante = %ld", GInstante_Inicial);
 
     while(1)
-    {   LDR_ADC_Ler( &GRegistro1.Brilho );          //read the LDR data
-        LAB01_DHT11_Leitura( PINO_DHT11,  &GRegistro1.Temperatura, &GRegistro1.Umidade); // Le o DHT11
-
-        vTaskDelay(pdMS_TO_TICKS(TEMPO_ENTRE_LEITURAS));
+    {   LAB01_DHT11_Leitura( PINO_DHT11,  &GRegistro1.Temperatura, &GRegistro1.Umidade); // Le o DHT11
+        LAB01_LDR_Ler( &GRegistro1.Brilho );                                             // Le o LDR
         RTC_DS3231_Leitura();  
         Tela_OLED_Escreve();
         Termostato_Processa( );                               // Processa o rele de acordo com a temperatura lida
@@ -588,7 +553,6 @@ void app_main(void)
 
         } // Fim do switch
         } // Fim do if AuxC > ' '
-
         vTaskDelay(pdMS_TO_TICKS(TEMPO_ENTRE_LEITURAS));                                        //delay             
     }
 }

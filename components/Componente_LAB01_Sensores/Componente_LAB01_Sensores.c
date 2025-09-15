@@ -3,18 +3,18 @@
 #include "dht.h"      // Biblioteca DHT para DHT11
 #include "esp_log.h"
 
-// #include "driver/adc_oneshot.h" // Includes para ADC do LDR
-// #include "C:/Espressif/frameworks/esp-idf-v5.4.1/components/esp_adc/one_shot.h"
-// #include "C:\\Espressif\\frameworks\\esp-idf-v5.4.1\\components\\esp_adc\\one_shot.h"
-// #include "esp_adc/adc_cali.h"
-// #include "esp_adc/adc_cali_scheme.h"
-
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
 #define TAG_LAB01_DHT11 "LAB01_DHT11"
 #define TAG_LAB01_LDR   "LAB01_LDR"
 
 //Configuração do DHT11
 #define LAB01_DHT11_TIPO DHT_TYPE_DHT11
+// Configuração do ADC
+adc_oneshot_unit_handle_t Manipulador_ADC1;  
+
 
 //=============================================================================
 uint8_t LAB01_DHT11_Leitura( int Pino_DHT11,  int16_t *Temperatura, int16_t *Umidade)
@@ -35,11 +35,6 @@ uint8_t LAB01_DHT11_Leitura( int Pino_DHT11,  int16_t *Temperatura, int16_t *Umi
         return(0);
     }
 }
-
-/*
-// Configuração do ADC
-adc_oneshot_unit_handle_t Handle_ADC1;  
-
 //=============================================================================
 void LAB01_LDR_Inicializa(void)
 { //inicializa o ADC para leitura do LDR
@@ -47,7 +42,7 @@ void LAB01_LDR_Inicializa(void)
     { //ADC1 Config
         .unit_id = ADC_UNIT_1,                                          //ADC1
     };
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&G_ADC1_Config, &Handle_ADC1)); //ADC1 Init
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&G_ADC1_Config, &Manipulador_ADC1)); //ADC1 Init
 
 //---------- Configura o ADC ----------------------
     adc_oneshot_chan_cfg_t config = 
@@ -55,7 +50,7 @@ void LAB01_LDR_Inicializa(void)
         .bitwidth = ADC_BITWIDTH_DEFAULT,                                                   //ADC1 Bitwidth (Default)
         .atten = ADC_ATTEN_DB_12,                                                           //ADC1 Attenuation 
     };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(Handle_ADC1, ADC_CHANNEL_0, &config));       
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(Manipulador_ADC1, ADC_CHANNEL_0, &config));       
 }
  
 //=============================================================================
@@ -63,10 +58,10 @@ void  LAB01_LDR_Ler( int16_t *Tensao_Lida)
 {//Le o LDR pelo ADC, retorna a tensao lida em mV
      static int Valor_Bruto;     //ADC Raw Data
 
-    ESP_ERROR_CHECK(adc_oneshot_read(Handle_ADC1, ADC_CHANNEL_0, &Valor_Bruto));   // Le o ADC1 Channel 0
+    ESP_ERROR_CHECK(adc_oneshot_read(Manipulador_ADC1, ADC_CHANNEL_0, &Valor_Bruto));   // Le o ADC1 Channel 0
     *Tensao_Lida = (Valor_Bruto * 2500)/8192;                                      //Calcula a tensao em mV (2.5V/8192)  (ADC 13 bits)
     ESP_LOGV (TAG_LAB01_LDR, "ADC%d Channel[%d] Dado bruto: %d, Tensao: %d mV", ADC_UNIT_1 + 1, ADC_CHANNEL_0, Valor_Bruto, *Tensao_Lida); //Debug
 
 }
 
-*/
+//=============================================================================
