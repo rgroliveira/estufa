@@ -11,7 +11,7 @@
 void Rele_Inicia(Tipo_Rele *Rele, int Pino) 
 {// Função de inicialização do componente relé, define o pino e o estado inicial
     Rele->Pino = Pino;
-    Rele->Estado = 0;
+    Rele->Estado = RELE_DESLIGADO; // Estado inicial desligado
     gpio_set_direction(Rele->Pino, GPIO_MODE_OUTPUT);
     gpio_set_level(Rele->Pino, Rele->Estado);
 }
@@ -19,14 +19,14 @@ void Rele_Inicia(Tipo_Rele *Rele, int Pino)
 // =============================================================================
 void Rele_Liga(Tipo_Rele *Rele)             
 { // Liga o relé, definindo o estado como 1
-    Rele->Estado = 1;
+    Rele->Estado = RELE_LIGADO;
     gpio_set_level(Rele->Pino, Rele->Estado);
 }
 
 // =============================================================================
 void Rele_Desliga(Tipo_Rele *Rele) 
 {  // Desliga o relé, definindo o estado como 0
-    Rele->Estado = 0;
+    Rele->Estado = RELE_DESLIGADO;
     gpio_set_level(Rele->Pino, Rele->Estado);
 }
 
@@ -39,6 +39,10 @@ int Rele_Estado(Tipo_Rele *Rele)
 // =============================================================================
 void Rele_Define_Estado(Tipo_Rele *Rele, int Estado) 
 { // Define o estado do relé (1 para ligado, 0 para desligado)
-    Rele->Estado = Estado ? 1 : 0; // Garante que o estado seja 0 ou 1
+    // Rele->Estado = Estado ? 1 : 0; // Garante que o estado seja 0 ou 1
+    if ( Estado == 0 ) 
+          Rele->Estado = RELE_DESLIGADO;
+    else  Rele->Estado = RELE_LIGADO; 
+
     gpio_set_level(Rele->Pino, Rele->Estado);
 }

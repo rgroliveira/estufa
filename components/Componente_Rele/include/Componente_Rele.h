@@ -7,6 +7,9 @@
 #ifndef COMPONENTE_RELE_H
 #define COMPONENTE_RELE_H
 
+#define RELE_DESLIGADO 0  // Adapta a definição do estado do relé ligado/desligado
+#define RELE_LIGADO    1
+
 // Estrutura para armazenar as características do relé
 typedef struct {
     int Pino;        // Pino do relé
